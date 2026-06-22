@@ -1,0 +1,64 @@
+{
+  "success": true,
+  "simulation": {
+    "simulation_id": "sim_001",
+    "created_at": "2024-06-22T18:30:00Z",
+    "student_summary": {
+      "name": "Aarav",
+      "profile_headline": "A builder-oriented student interested in coding, business, and content creation.",
+      "dominant_interests": ["coding", "business", "content creation"],
+      "strongest_existing_skills": ["basic Python", "public speaking"],
+      "main_concerns": ["AI replacing coders", "choosing the wrong career"]
+    },
+    "career_paths": [
+      {
+        "title": "Full Stack Developer",
+        "cluster": "Technology",
+        "fit_score": 92,
+        "difficulty_score": 75,
+        "growth_potential": 88,
+        "ai_exposure_score": 65,
+        "why_it_fits": "Your interest in coding and building projects aligns perfectly with software development.",
+        "day_in_the_life": "Mornings start with system architecture reviews. Afternoons are deep-work sessions building features using Next.js, while using AI for unit testing and boilerplate.",
+        "ai_exposure_breakdown": {
+          "ai_assisted_tasks": ["Boilerplate code", "Documentation", "Bug finding"],
+          "human_led_tasks": ["Architecture", "Product Strategy", "User Empathy"],
+          "automation_pressure": "High on repetitive logic and syntax.",
+          "human_advantage": "Solving business-specific logic that requires high context."
+        },
+        "required_skills": ["React", "Node.js", "PostgreSQL", "System Design"],
+        "matched_skills": ["Python", "Problem Solving"],
+        "missing_skills": ["Frontend Frameworks", "Database Design"],
+        "starter_project": "Build a personal portfolio using Next.js and Tailwind CSS."
+      }
+    ],
+    "comparison": {
+      "metric_labels": ["Fit", "Growth", "AI Resilience"],
+      "data": [
+        {
+          "career": "Full Stack Developer",
+          "scores": [92, 88, 35]
+        }
+      ]
+    },
+    "skill_gap_analysis": {
+      "strengths": ["Python", "Public Speaking"],
+      "priority_gaps": ["Web Frameworks", "Databases"],
+      "roadmap": "Focus on learning JavaScript and React over the next 3 months."
+    },
+    "action_sprint": {
+      "title": "7-Day Web Dev Kickstart",
+      "tasks": [
+        {"day": 1, "task": "Setup development environment", "deliverable": "Local VS Code setup"},
+        {"day": 2, "task": "Learn basic HTML/CSS", "deliverable": "Simple static page"}
+      ],
+      "expected_final_output": "A deployed personal landing page.",
+      "next_steps": ["Join a developer community", "Learn Git basics"]
+    },
+    "trace": {
+      "steps": ["profile_normalization", "career_matching", "scoring"],
+      "logic_version": "1.0.0",
+      "confidence_score": 0.94
+    }
+  }
+}

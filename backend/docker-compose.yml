@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=daedalus
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://postgres:password@db:5432/daedalus
+      - JWT_SECRET_KEY=your-super-secret-key-change-me
+      - ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
