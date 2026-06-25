@@ -1,16 +1,20 @@
-from typing import Optional, Dict, Any
-from pydantic import BaseModel, ConfigDict
-from uuid import UUID
+from typing import List, Optional
+from pydantic import BaseModel
+from .simulation import StudentProfile
 
-class DemoPersonaBase(BaseModel):
+class DemoPersona(BaseModel):
+    persona_id: str
     name: str
-    description: Optional[str] = None
-    profile_json: Dict[str, Any]
+    age: Optional[int] = None
+    headline: str
+    interests: List[str]
+    favorite_subjects: List[str]
+    current_skills: List[str]
+    career_fears: List[str]
+    work_style: str
+    weekly_time_available: str
+    profile: StudentProfile
 
-class DemoPersonaCreate(DemoPersonaBase):
-    pass
-
-class DemoPersona(DemoPersonaBase):
-    id: UUID
-
-    model_config = ConfigDict(from_attributes=True)
+class DemoPersonasResponse(BaseModel):
+    success: bool
+    personas: List[DemoPersona]

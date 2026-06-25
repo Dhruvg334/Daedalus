@@ -1,31 +1,34 @@
-from typing import List, Optional, Any, Dict
-from pydantic import BaseModel, Field
 from datetime import datetime
-from uuid import UUID
+from typing import Any, Dict, List, Literal, Optional
+from pydantic import BaseModel, Field
+
+EducationStage = Literal["middle_school", "high_school", "early_college", "college", "early_professional"]
+RiskLevel = Literal["low", "medium", "high"]
+Priority = Literal["high", "medium", "low"]
 
 class StudentProfile(BaseModel):
-    name: str
-    age: int
-    education_stage: str
-    location: str
-    interests: List[str]
-    favorite_subjects: List[str]
-    current_skills: List[str]
-    work_style_preferences: List[str]
-    career_fears: List[str]
-    dream_careers: List[str]
-    disliked_careers: List[str]
+    name: str = Field(..., min_length=2, max_length=40)
+    age: Optional[int] = Field(default=None, ge=10, le=30)
+    education_stage: EducationStage
+    location: Optional[str] = None
+    interests: List[str] = Field(..., min_length=2)
+    favorite_subjects: List[str] = Field(..., min_length=1)
+    current_skills: List[str] = Field(..., min_length=2)
+    work_style_preferences: List[str] = Field(..., min_length=1)
+    career_fears: List[str] = Field(..., min_length=1)
+    dream_careers: List[str] = Field(default_factory=list)
+    disliked_careers: List[str] = Field(default_factory=list)
     weekly_time_available: str
-    optional_profile_text: Optional[str] = None
+    optional_profile_text: Optional[str] = Field(default=None, max_length=2000)
 
 class SimulationOptions(BaseModel):
     include_trace: bool = True
     include_demo_fallback: bool = True
-    preferred_number_of_paths: int = 3
+    preferred_number_of_paths: int = Field(default=3, ge=1, le=5)
 
 class SimulationRequest(BaseModel):
     student_profile: StudentProfile
-    options: SimulationOptions
+    options: SimulationOptions = Field(default_factory=SimulationOptions)
 
 class StudentSummary(BaseModel):
     name: str
@@ -35,54 +38,93 @@ class StudentSummary(BaseModel):
     main_concerns: List[str]
 
 class AIExposureBreakdown(BaseModel):
-    ai_assisted_tasks: List[str]
-    human_led_tasks: List[str]
-    automation_pressure: str
-    human_advantage: str
+    task: str
+    ai_role: str
+    human_role: str
+    risk_level: RiskLevel
+
+class StarterProject(BaseModel):
+    title: str
+    description: str
+    expected_output: str
+
+class RoadmapStep(BaseModel):
+    step: int
+    title: str
+    description: str
+    estimated_time: str
 
 class CareerPath(BaseModel):
+    career_id: str
     title: str
     cluster: str
+    one_line_summary: str
     fit_score: int
-    difficulty_score: int
-    growth_potential: int
     ai_exposure_score: int
-    why_it_fits: str
-    day_in_the_life: str
-    ai_exposure_breakdown: AIExposureBreakdown
+    difficulty_score: int
+    growth_potential_score: int
+    confidence_score: float
+    why_it_fits: List[str]
     required_skills: List[str]
     matched_skills: List[str]
     missing_skills: List[str]
-    starter_project: str
+    human_advantage: List[str]
+    ai_exposure_breakdown: List[AIExposureBreakdown]
+    starter_project: StarterProject
+    learning_roadmap: List[RoadmapStep]
 
-class ComparisonData(BaseModel):
-    career: str
-    scores: List[int]
+class ComparisonRow(BaseModel):
+    career_id: str
+    title: str
+    fit_score: int
+    ai_exposure_score: int
+    difficulty_score: int
+    growth_potential_score: int
+    first_project: str
 
 class Comparison(BaseModel):
-    metric_labels: List[str]
-    data: List[ComparisonData]
+    recommended_path_id: str
+    summary: str
+    comparison_rows: List[ComparisonRow]
+
+class PriorityGap(BaseModel):
+    skill: str
+    priority: Priority
+    reason: str
+
+class SkillMatrixItem(BaseModel):
+    skill: str
+    current_level: int
+    target_level: int
+    relevant_career_ids: List[str]
 
 class SkillGapAnalysis(BaseModel):
-    strengths: List[str]
-    priority_gaps: List[str]
-    roadmap: str
+    top_existing_skills: List[str]
+    highest_priority_gaps: List[PriorityGap]
+    skill_matrix: List[SkillMatrixItem]
 
-class ActionTask(BaseModel):
+class SprintDay(BaseModel):
     day: int
+    title: str
     task: str
     deliverable: str
 
 class ActionSprint(BaseModel):
-    title: str
-    tasks: List[ActionTask]
+    focus_career_id: str
+    sprint_title: str
     expected_final_output: str
-    next_steps: List[str]
+    days: List[SprintDay]
+
+class TraceStep(BaseModel):
+    step_id: str
+    status: str
+    summary: str
+    detail: Optional[Dict[str, Any]] = None
 
 class Trace(BaseModel):
-    steps: List[str]
-    logic_version: str
-    confidence_score: float
+    pipeline_version: str
+    steps: List[TraceStep]
+    warnings: List[str]
 
 class SimulationResult(BaseModel):
     simulation_id: str

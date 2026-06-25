@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api.v1 import auth, health, demo_personas, simulate, simulations, feedback
+from .api.v1 import health, demo_personas, simulate, simulations, feedback
 from .core.config import settings
 from .core.database import Base, engine
 
@@ -22,19 +22,26 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
-# Global Error Handler: Reveals the actual error message if a 500 occurs
+# Global error handler: keep responses stable for the frontend and avoid leaking internals.
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logging.error(f"FATAL ERROR: {exc}")
+    logging.exception("Unhandled backend error")
     return JSONResponse(
         status_code=500,
-        content={"detail": str(exc), "error_type": type(exc).__name__}
+        content={
+            "success": False,
+            "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "Unexpected server error. Please try again.",
+                "details": None,
+            },
+        },
     )
 
-# Broad CORS for Hackathon: Ensures frontend integration is seamless
+# CORS is environment-driven so local and deployed frontends can be configured safely.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -42,7 +49,6 @@ app.add_middleware(
 
 # Include Routers
 app.include_router(health.router, prefix=settings.API_V1_STR, tags=["health"])
-app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(demo_personas.router, prefix=f"{settings.API_V1_STR}/demo-personas", tags=["demo-personas"])
 app.include_router(simulate.router, prefix=f"{settings.API_V1_STR}/simulate", tags=["simulate"])
 app.include_router(simulations.router, prefix=f"{settings.API_V1_STR}/simulations", tags=["simulations"])
@@ -50,4 +56,4 @@ app.include_router(feedback.router, prefix=f"{settings.API_V1_STR}/feedback", ta
 
 @app.get("/")
 async def root():
-    return {"message": "Daedalus API is Online. Go to /docs for testing."}
+    return {"success": True, "message": "Daedalus API is online", "docs": "/docs"}
