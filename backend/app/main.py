@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api.v1 import health, demo_personas, simulate, simulations, feedback, auth, assistant, hubs, progress
+from .api.v1 import health, demo_personas, simulate, simulations, feedback, assistant, hubs, progress
 from .core.config import settings
 from .core.database import Base, engine
 
@@ -13,9 +13,6 @@ from .models.simulation import Simulation
 from .models.persona import DemoPersona
 from .models.feedback import Feedback
 from .models.progress import UserProgress
-
-# Create all tables on startup
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -61,10 +58,15 @@ app.include_router(demo_personas.router, prefix=f"{settings.API_V1_STR}/demo-per
 app.include_router(simulate.router, prefix=f"{settings.API_V1_STR}/simulate", tags=["simulate"])
 app.include_router(simulations.router, prefix=f"{settings.API_V1_STR}/simulations", tags=["simulations"])
 app.include_router(feedback.router, prefix=f"{settings.API_V1_STR}/feedback", tags=["feedback"])
-app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(assistant.router, prefix=f"{settings.API_V1_STR}/assistant", tags=["assistant"])
 app.include_router(hubs.router, prefix=f"{settings.API_V1_STR}/hubs", tags=["hubs"])
 app.include_router(progress.router, prefix=f"{settings.API_V1_STR}/progress", tags=["progress"])
+
+
+@app.on_event("startup")
+def create_tables_on_startup():
+    # Create SQLite tables after the app object is built so import/startup remains lighter.
+    Base.metadata.create_all(bind=engine)
 
 @app.get("/")
 async def root():

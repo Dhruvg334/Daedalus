@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { ContinueDashboardButton } from "@/components/ContinueDashboardButton";
 
 export default function Home() {
   return (
@@ -38,6 +39,7 @@ export default function Home() {
             <Link href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Features</Link>
             <Link href="/demo-personas" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Demo</Link>
             <ThemeToggle />
+            <ContinueDashboardButton variant="nav" />
             <Button variant="premium" size="sm" asChild>
               <Link href="/onboarding">Get Started Free</Link>
             </Button>
@@ -83,6 +85,7 @@ export default function Home() {
               </Link>
             </Button>
           </div>
+          <ContinueDashboardButton />
           <p className="mt-6 text-sm text-muted-foreground animate-in fade-in duration-1000 delay-300">
             Free to use · No account required · Results in under 10 seconds
           </p>

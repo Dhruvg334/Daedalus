@@ -11,9 +11,9 @@ class StudentProfile(BaseModel):
     age: Optional[int] = Field(default=None, ge=10, le=30)
     education_stage: EducationStage
     location: Optional[str] = None
-    interests: List[str] = Field(..., min_length=2)
+    interests: List[str] = Field(..., min_length=1)
     favorite_subjects: List[str] = Field(..., min_length=1)
-    current_skills: List[str] = Field(..., min_length=2)
+    current_skills: List[str] = Field(..., min_length=1)
     work_style_preferences: List[str] = Field(..., min_length=1)
     career_fears: List[str] = Field(..., min_length=1)
     dream_careers: List[str] = Field(default_factory=list)

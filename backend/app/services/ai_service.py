@@ -1,4 +1,7 @@
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+except Exception:
+    genai = None
 from typing import List, Dict, Any, Optional
 import json
 from ..core.config import settings
@@ -6,7 +9,7 @@ from ..schemas.assistant import AssistantMessage
 
 class AIService:
     def __init__(self):
-        if settings.GOOGLE_API_KEY:
+        if settings.GOOGLE_API_KEY and genai is not None:
             genai.configure(api_key=settings.GOOGLE_API_KEY)
             self.model = genai.GenerativeModel('gemini-1.5-flash')
         else:
@@ -18,7 +21,7 @@ class AIService:
         context: Dict[str, Any]
     ) -> str:
         if not self.model:
-            return "AI features are currently unavailable. Please configure GOOGLE_API_KEY."
+            return "AI assistant is running in offline mode. The core Daedalus simulation still works; configure GOOGLE_API_KEY to enable live assistant responses."
 
         # Context Compression: Extract only necessary fields from simulation
         system_context = self._build_system_context(context)

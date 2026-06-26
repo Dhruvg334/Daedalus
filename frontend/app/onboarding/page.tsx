@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { KeyboardEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -43,60 +43,144 @@ export default function OnboardingPage() {
     career_fears: [] as string[],
     dream_careers: [] as string[],
   });
+  const [draftInputs, setDraftInputs] = useState({
+    interests: "",
+    current_skills: "",
+    career_fears: "",
+    dream_careers: "",
+  });
 
   const progress = ((currentStep + 1) / STEPS.length) * 100;
 
   const isMeaningful = (value: string) => value.trim().replace(/[^a-zA-Z0-9]/g, "").length >= 2;
 
-  const validateStep = () => {
+  const normalizeTokens = (value: string) =>
+    value
+      .split(/[,\n]/)
+      .map(item => item.trim().replace(/\s+/g, " "))
+      .filter(Boolean)
+      .filter(isMeaningful);
+
+  const mergeTokens = (existing: string[], draft: string) =>
+    Array.from(new Set([...existing, ...normalizeTokens(draft)])).slice(0, 8);
+
+  const getCommittedFormData = () => {
+    if (currentStep === 2) {
+      return {
+        ...formData,
+        interests: mergeTokens(formData.interests, draftInputs.interests),
+        current_skills: mergeTokens(formData.current_skills, draftInputs.current_skills),
+      };
+    }
+    if (currentStep === 3) {
+      return {
+        ...formData,
+        dream_careers: mergeTokens(formData.dream_careers, draftInputs.dream_careers),
+        career_fears: mergeTokens(formData.career_fears, draftInputs.career_fears),
+      };
+    }
+    return formData;
+  };
+
+  const validateStep = (data = formData) => {
     if (currentStep === 0) {
-      if (!isMeaningful(formData.name)) return "Please enter a real name with at least 2 characters.";
-      const age = Number(formData.age);
+      if (!isMeaningful(data.name)) return "Please enter a real name with at least 2 characters.";
+      const age = Number(data.age);
       if (!Number.isFinite(age) || age < 10 || age > 30) return "Please enter an age between 10 and 30.";
     }
     if (currentStep === 1) {
-      if (!formData.education_stage) return "Please select your current education stage.";
+      if (!data.education_stage) return "Please select your current education stage.";
     }
     if (currentStep === 2) {
-      if (formData.interests.length < 2) return "Add at least 2 interests. Press Enter after each one.";
-      if (formData.current_skills.length < 2) return "Add at least 2 current skills. Press Enter after each one.";
+      if (data.interests.length < 1) return "Add at least 1 interest. Type it, then press Enter or click Continue.";
+      if (data.current_skills.length < 1) return "Add at least 1 current skill. Type it, then press Enter or click Continue.";
     }
     if (currentStep === 3) {
-      if (formData.career_fears.length < 1) return "Add at least 1 career concern or fear. Press Enter after typing it.";
+      if (data.career_fears.length < 1) return "Add at least 1 career concern or fear. Type it, then press Enter or click Continue.";
     }
     return null;
   };
 
+  const addItem = (
+    key: "interests" | "current_skills" | "career_fears" | "dream_careers",
+    value: string,
+    options: { silent?: boolean } = {}
+  ) => {
+    const cleanValues = normalizeTokens(value);
+
+    if (cleanValues.length === 0) {
+      if (!options.silent) setError("Please enter a meaningful value with at least 2 characters.");
+      return false;
+    }
+
+    setError(null);
+    setFormData(prev => ({
+      ...prev,
+      [key]: Array.from(new Set([...prev[key], ...cleanValues])).slice(0, 8)
+    }));
+    setDraftInputs(prev => ({ ...prev, [key]: "" }));
+    return true;
+  };
+
+  const removeItem = (key: keyof typeof draftInputs, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [key]: prev[key].filter(item => item !== value)
+    }));
+  };
+
+  const handleTokenKeyDown = (
+    e: KeyboardEvent<HTMLInputElement>,
+    key: "interests" | "current_skills" | "career_fears" | "dream_careers"
+  ) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addItem(key, draftInputs[key]);
+    }
+  };
+
   const handleNext = () => {
-    const validationError = validateStep();
+    const committed = getCommittedFormData();
+    const validationError = validateStep(committed);
+
+    setFormData(committed);
+    if (currentStep === 2) {
+      setDraftInputs(prev => ({ ...prev, interests: "", current_skills: "" }));
+    }
+    if (currentStep === 3) {
+      setDraftInputs(prev => ({ ...prev, dream_careers: "", career_fears: "" }));
+    }
+
     if (validationError) {
       setError(validationError);
       return;
     }
+
     setError(null);
     if (currentStep < STEPS.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
-      handleSubmit();
+      handleSubmit(committed);
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (data = formData) => {
     setLoading(true);
-    const interests = formData.interests.map(item => item.trim()).filter(Boolean);
-    const skills = formData.current_skills.map(item => item.trim()).filter(Boolean);
-    const fears = formData.career_fears.map(item => item.trim()).filter(Boolean);
+    const interests = data.interests.map(item => item.trim()).filter(isMeaningful);
+    const skills = data.current_skills.map(item => item.trim()).filter(isMeaningful);
+    const fears = data.career_fears.map(item => item.trim()).filter(isMeaningful);
+    const dreams = data.dream_careers.map(item => item.trim()).filter(isMeaningful);
 
     savePendingProfile({
-      name: formData.name.trim(),
-      age: Number(formData.age),
-      education_stage: formData.education_stage as any,
+      name: data.name.trim(),
+      age: Number(data.age),
+      education_stage: data.education_stage as any,
       location: "Global",
       interests,
       favorite_subjects: interests,
       current_skills: skills,
       career_fears: fears,
-      dream_careers: formData.dream_careers.length > 0 ? formData.dream_careers : [interests[0]],
+      dream_careers: dreams.length > 0 ? dreams : [interests[0]],
       disliked_careers: [],
       work_style_preferences: ["building", "autonomous"],
       weekly_time_available: "5-10 hours",
@@ -104,19 +188,6 @@ export default function OnboardingPage() {
     });
 
     router.push("/loading");
-  };
-
-  const addItem = (key: 'interests' | 'current_skills' | 'career_fears' | 'dream_careers', value: string) => {
-    const clean = value.trim().replace(/\s+/g, " ");
-    if (!isMeaningful(clean)) {
-      setError("Please enter a meaningful value with at least 2 characters.");
-      return;
-    }
-    setError(null);
-    setFormData(prev => ({
-      ...prev,
-      [key]: Array.from(new Set([...prev[key], clean])).slice(0, 8)
-    }));
   };
 
   return (
@@ -206,16 +277,36 @@ export default function OnboardingPage() {
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Primary Interests</label>
-                        <Input placeholder="e.g. AI, Music, Finance..." onKeyDown={e => { if(e.key === 'Enter') { addItem('interests', e.currentTarget.value); e.currentTarget.value = ''; }}} className="h-12 bg-muted/20 border-none focus-visible:ring-primary/20" />
+                        <Input
+                          placeholder="e.g. AI, Music, Finance..."
+                          value={draftInputs.interests}
+                          onChange={e => setDraftInputs(prev => ({ ...prev, interests: e.target.value }))}
+                          onKeyDown={e => handleTokenKeyDown(e, "interests")}
+                          onBlur={() => addItem("interests", draftInputs.interests, { silent: true })}
+                          className="h-12 bg-muted/20 border-none focus-visible:ring-primary/20"
+                        />
+                        <p className="text-xs text-muted-foreground">Press Enter, type a comma, or click Continue to add the typed value.</p>
                         <div className="flex flex-wrap gap-2 pt-2">
-                          {formData.interests.map(i => <Badge key={i} variant="secondary">{i}</Badge>)}
+                          {formData.interests.map(i => (
+                            <Badge key={i} variant="secondary" className="cursor-pointer" onClick={() => removeItem("interests", i)} title="Click to remove">{i} ×</Badge>
+                          ))}
                         </div>
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Current Skills</label>
-                        <Input placeholder="e.g. Python, Design, Writing..." onKeyDown={e => { if(e.key === 'Enter') { addItem('current_skills', e.currentTarget.value); e.currentTarget.value = ''; }}} className="h-12 bg-muted/20 border-none focus-visible:ring-primary/20" />
+                        <Input
+                          placeholder="e.g. Python, Design, Writing..."
+                          value={draftInputs.current_skills}
+                          onChange={e => setDraftInputs(prev => ({ ...prev, current_skills: e.target.value }))}
+                          onKeyDown={e => handleTokenKeyDown(e, "current_skills")}
+                          onBlur={() => addItem("current_skills", draftInputs.current_skills, { silent: true })}
+                          className="h-12 bg-muted/20 border-none focus-visible:ring-primary/20"
+                        />
+                        <p className="text-xs text-muted-foreground">One real skill is enough to continue. Add more if you want a sharper result.</p>
                         <div className="flex flex-wrap gap-2 pt-2">
-                          {formData.current_skills.map(s => <Badge key={s} variant="outline" className="text-emerald-500 border-emerald-500/20">{s}</Badge>)}
+                          {formData.current_skills.map(skill => (
+                            <Badge key={skill} variant="outline" className="cursor-pointer text-emerald-500 border-emerald-500/20" onClick={() => removeItem("current_skills", skill)} title="Click to remove">{skill} ×</Badge>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -228,18 +319,36 @@ export default function OnboardingPage() {
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Dream Careers</label>
-                        <Input placeholder="e.g. Startup Founder, Researcher..." onKeyDown={e => { if(e.key === 'Enter') { addItem('dream_careers', e.currentTarget.value); e.currentTarget.value = ''; }}} className="h-12 bg-muted/20 border-none focus-visible:ring-primary/20" />
+                        <Input
+                          placeholder="e.g. Startup Founder, Researcher..."
+                          value={draftInputs.dream_careers}
+                          onChange={e => setDraftInputs(prev => ({ ...prev, dream_careers: e.target.value }))}
+                          onKeyDown={e => handleTokenKeyDown(e, "dream_careers")}
+                          onBlur={() => addItem("dream_careers", draftInputs.dream_careers, { silent: true })}
+                          className="h-12 bg-muted/20 border-none focus-visible:ring-primary/20"
+                        />
                         <div className="flex flex-wrap gap-2 pt-2">
-                          {formData.dream_careers.map(c => <Badge key={c} variant="secondary">{c}</Badge>)}
+                          {formData.dream_careers.map(career => (
+                            <Badge key={career} variant="secondary" className="cursor-pointer" onClick={() => removeItem("dream_careers", career)} title="Click to remove">{career} ×</Badge>
+                          ))}
                         </div>
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                           <ShieldAlert className="w-3 h-3 text-amber-500" /> Career Fears
                         </label>
-                        <Input placeholder="e.g. Automation, Stagnation..." onKeyDown={e => { if(e.key === 'Enter') { addItem('career_fears', e.currentTarget.value); e.currentTarget.value = ''; }}} className="h-12 bg-muted/20 border-none focus-visible:ring-primary/20" />
+                        <Input
+                          placeholder="e.g. Automation, Stagnation..."
+                          value={draftInputs.career_fears}
+                          onChange={e => setDraftInputs(prev => ({ ...prev, career_fears: e.target.value }))}
+                          onKeyDown={e => handleTokenKeyDown(e, "career_fears")}
+                          onBlur={() => addItem("career_fears", draftInputs.career_fears, { silent: true })}
+                          className="h-12 bg-muted/20 border-none focus-visible:ring-primary/20"
+                        />
                         <div className="flex flex-wrap gap-2 pt-2">
-                          {formData.career_fears.map(f => <Badge key={f} variant="outline" className="text-amber-500 border-amber-500/20">{f}</Badge>)}
+                          {formData.career_fears.map(fear => (
+                            <Badge key={fear} variant="outline" className="cursor-pointer text-amber-500 border-amber-500/20" onClick={() => removeItem("career_fears", fear)} title="Click to remove">{fear} ×</Badge>
+                          ))}
                         </div>
                       </div>
                     </div>

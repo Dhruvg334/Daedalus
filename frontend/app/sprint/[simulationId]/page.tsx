@@ -115,9 +115,9 @@ export default function SprintPage() {
                 <span className="text-xs font-bold uppercase tracking-widest text-amber-600">Action Execution Protocol</span>
               </div>
               <h1 className="text-4xl font-extrabold tracking-tight mb-2">{sprint?.sprint_title}</h1>
-              <p className="text-muted-foreground text-lg leading-relaxed flex items-center gap-2">
-                Focus Target: <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20">{focus?.title || sprint?.focus_career_id}</Badge>
-              </p>
+              <div className="text-muted-foreground text-lg leading-relaxed flex items-center gap-2">
+                <span>Focus Target:</span> <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20">{focus?.title || sprint?.focus_career_id}</Badge>
+              </div>
             </div>
             <div className="flex items-center gap-4 bg-card border rounded-2xl p-4 shadow-sm">
               <div className="space-y-1 min-w-[120px]">
