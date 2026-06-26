@@ -64,11 +64,32 @@ export type RoadmapStep = {
   estimated_time: string;
 };
 
+export type CareerMilestone = {
+  period: string;
+  title: string;
+  description: string;
+  unlocked_capabilities: string[];
+  risk_factor: number;
+};
+
+export type FutureSelf = {
+  narrative: string;
+  headline: string;
+  future_resume_highlights: string[];
+};
+
+export type RiskPoint = {
+  category: string;
+  score: number;
+  description: string;
+};
+
 export type CareerPath = {
   career_id: string;
   title: string;
   cluster: string;
   one_line_summary: string;
+  mission_statement: string;
   fit_score: number;
   ai_exposure_score: number;
   difficulty_score: number;
@@ -82,6 +103,16 @@ export type CareerPath = {
   ai_exposure_breakdown: AIExposureBreakdown[];
   starter_project: StarterProject;
   learning_roadmap: RoadmapStep[];
+  evolution_timeline: CareerMilestone[];
+  future_self?: FutureSelf;
+  risk_heatmap: RiskPoint[];
+};
+
+export type SkillTreeNode = {
+  id: string;
+  label: string;
+  status: "mastered" | "learning" | "locked";
+  children: SkillTreeNode[];
 };
 
 export type SkillGapAnalysis = {
@@ -97,6 +128,7 @@ export type SkillGapAnalysis = {
     target_level: number;
     relevant_career_ids: string[];
   }>;
+  skill_tree: SkillTreeNode[];
 };
 
 export type ActionSprint = {
@@ -122,6 +154,11 @@ export type Trace = {
   warnings: string[];
 };
 
+export type CareerDNATrait = {
+  label: string;
+  value: number;
+};
+
 export type Simulation = {
   simulation_id: string;
   created_at: string;
@@ -132,6 +169,7 @@ export type Simulation = {
     strongest_existing_skills: string[];
     main_concerns: string[];
   };
+  career_dna: CareerDNATrait[];
   career_paths: CareerPath[];
   comparison: {
     recommended_path_id: string;
@@ -163,4 +201,56 @@ export type ApiError = {
     message: string;
     details?: unknown;
   };
+};
+
+// --- PHASE 4 TYPES ---
+
+export type AssistantMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+export type AssistantChatResponse = {
+  content: string;
+  suggested_actions: string[];
+  relevant_resources: string[];
+};
+
+export type Opportunity = {
+  id: string;
+  title: string;
+  organization: string;
+  location: string;
+  type: "internship" | "job" | "freelance" | "hackathon" | "open_source" | "competition";
+  salary_stipend?: string;
+  deadline?: string;
+  requirements: string[];
+  difficulty: "beginner" | "intermediate" | "advanced";
+  source: string;
+  apply_url: string;
+  relevance_score: number;
+};
+
+export type LearningResource = {
+  id: string;
+  title: string;
+  provider: string;
+  type: "documentation" | "tutorial" | "video" | "course" | "book" | "exercise";
+  difficulty: "beginner" | "intermediate" | "advanced";
+  estimated_time: string;
+  prerequisites: string[];
+  quality_score: number;
+  tags: string[];
+  url: string;
+  is_free: boolean;
+};
+
+export type OpportunityResponse = {
+  opportunities: Opportunity[];
+};
+
+export type LearningHubResponse = {
+  resources: LearningResource[];
+  progress: number;
+  streak: number;
 };

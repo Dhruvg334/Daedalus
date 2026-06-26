@@ -2,16 +2,20 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# THE FOREVER FIX: Absolute path with Windows-friendly forward slashes
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DB_PATH = os.path.join(BASE_DIR, "daedalus.db").replace("\\", "/")
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH}"
 
-print(f"🚀 [DATABASE] Hard-Locked to SQLite: {SQLALCHEMY_DATABASE_URL}")
+# Local development uses a repo-local SQLite DB. Serverless/prod uses /tmp because
+# deployment filesystems are usually read-only and ephemeral.
+if os.getenv("VERCEL") or os.getenv("ENVIRONMENT") == "production":
+    DB_PATH = "/tmp/daedalus.db"
+else:
+    DB_PATH = os.path.join(BASE_DIR, "daedalus.db")
+
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH.replace('\\\\', '/')}"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False} # Required for SQLite + FastAPI
+    connect_args={"check_same_thread": False}
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

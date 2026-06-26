@@ -6,59 +6,59 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
-      fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        display: ["'DM Sans'", "Inter", "sans-serif"],
-        mono: ["'JetBrains Mono'", "monospace"],
-      },
       colors: {
-        frost: {
-          50: "#f8faff",
-          100: "#f0f4ff",
-          200: "#e4ecff",
-          300: "#c8d8ff",
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
         },
-        silver: {
-          100: "#f5f5f7",
-          200: "#e8e8ed",
-          300: "#d0d0d8",
-          400: "#b0b0bc",
-          500: "#8e8e9a",
-          600: "#6e6e7a",
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
         },
-        ice: "#dce8ff",
-        aether: "#7b9ef8",
-        void: "#0d1117",
-      },
-      backdropBlur: {
-        xs: "2px",
-      },
-      animation: {
-        "float": "float 6s ease-in-out infinite",
-        "float-slow": "float 9s ease-in-out infinite",
-        "pulse-slow": "pulse 4s ease-in-out infinite",
-        "shimmer": "shimmer 3s linear infinite",
-        "glow": "glow 2s ease-in-out infinite alternate",
-      },
-      keyframes: {
-        float: {
-          "0%, 100%": { transform: "translateY(0px)" },
-          "50%": { transform: "translateY(-20px)" },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
         },
-        shimmer: {
-          "0%": { backgroundPosition: "-200% 0" },
-          "100%": { backgroundPosition: "200% 0" },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
         },
-        glow: {
-          "0%": { opacity: "0.5" },
-          "100%": { opacity: "1" },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
         },
       },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", "Inter", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "JetBrains Mono", "monospace"],
+      },
+      boxShadow: {
+        'premium': '0 0 0 1px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.05), 0 12px 24px rgba(0,0,0,0.05)',
+        'premium-dark': '0 0 0 1px rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.2), 0 12px 24px rgba(0,0,0,0.2)',
+      }
     },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 };
-
 export default config;

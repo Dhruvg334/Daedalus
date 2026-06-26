@@ -1,23 +1,32 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { HackathonProvider } from "@/components/layout/hackathon-modes";
+import { ThemeProvider } from "@/components/layout/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
-  title: "Daedalus — Navigate Your AI-Era Career",
-  description: "Stop asking what job AI will take. Start discovering what future you can build.",
+  title: "Daedalus — Career Operating System",
+  description: "The intelligent navigation layer for the AI era of work.",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body>
-        <div className="bg-scene">
-          <div className="bg-orb w-[600px] h-[600px] bg-blue-200/40 top-[-100px] left-[-200px]" style={{ animationDelay: "0s" }} />
-          <div className="bg-orb w-[400px] h-[400px] bg-indigo-200/30 top-[20%] right-[-100px]" style={{ animationDelay: "3s", animationDuration: "10s" }} />
-          <div className="bg-orb w-[500px] h-[500px] bg-blue-100/50 bottom-[-100px] left-[30%]" style={{ animationDelay: "1.5s", animationDuration: "12s" }} />
-        </div>
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased selection:bg-primary selection:text-primary-foreground transition-colors duration-300">
+        <ThemeProvider defaultTheme="dark" storageKey="daedalus-theme">
+          <TooltipProvider>
+            <HackathonProvider>
+              {/* Background orbs — react to theme via CSS vars */}
+              <div className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden">
+                <div className="opacity-20 absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] animate-pulse transition-all duration-1000" />
+                <div className="opacity-20 absolute bottom-[10%] right-[-10%] w-[30%] h-[30%] bg-primary/15 rounded-full blur-[120px] transition-all duration-1000" />
+              </div>
+              {children}
+            </HackathonProvider>
+          </TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,5 +1,5 @@
 import os
-from typing import List, Any, Union
+from typing import List, Any, Optional
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -11,13 +11,16 @@ class Settings(BaseSettings):
     # Use a default that is safe for local dev
     DATABASE_URL: str = "sqlite:///./daedalus.db"
 
+    # AI
+    GOOGLE_API_KEY: Optional[str] = None
+
     # JWT
     JWT_SECRET_KEY: str = "your-super-secret-key-change-me"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
     # CORS - Use Any to prevent pydantic-settings from forcing JSON loads on .env strings
-    ALLOWED_ORIGINS: Any = "http://localhost:5173,http://localhost:3000"
+    ALLOWED_ORIGINS: Any = "http://localhost:3000,http://localhost:3001,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:3001"
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod

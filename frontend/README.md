@@ -26,18 +26,18 @@ Daedalus is a visual career decision cockpit for students. It generates three pe
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 16.2.9 (App Router)
 - **Styling**: Tailwind CSS
-- **Fonts**: DM Sans (display), Inter (body), JetBrains Mono (code)
+- **Fonts**: Inter (body), JetBrains Mono (code)
 - **Icons**: Lucide React
-- **Theme**: Frosty white glassmorphism with silver/blue accents
+- **Theme**: Premium Dark/Light OS aesthetic
 
 ---
 
 ## Setup
 
 ```bash
-npm install
+npm install --legacy-peer-deps
 npm run dev
 ```
 
@@ -61,11 +61,11 @@ Core endpoint: `POST /api/v1/simulate`
 
 ## Design System
 
-- **Base**: Frosty white glassmorphism (`rgba(255,255,255,0.55)` + `backdrop-filter: blur`)
-- **Accent**: Electric blue `#7b9ef8` / Indigo `#4f6ef7`
-- **Success**: Emerald `#10b981`
-- **Warning**: Amber `#f59e0b`
-- **Background**: Soft blue-white gradient with floating orbs
+- **Base**: Premium semantic tokens with HSL support
+- **Accent**: Electric Indigo (Primary)
+- **Success**: Emerald
+- **Warning**: Amber
+- **Background**: Kinetic particle system with blurred orbs
 
 ---
 

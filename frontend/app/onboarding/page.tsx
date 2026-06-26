@@ -1,105 +1,69 @@
 "use client";
+
 import { useState } from "react";
-import Navbar from "@/components/Navbar";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowRight,
+  ArrowLeft,
+  Sparkles,
+  Check,
+  User,
+  Target,
+  Zap,
+  Brain,
+  ShieldAlert
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { savePendingProfile } from "@/lib/simulation-store";
-import type { StudentProfileInput } from "@/lib/types";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 const STEPS = [
-  { id: "basics", title: "Who are you?", subtitle: "Basic information to personalize your paths." },
-  { id: "interests", title: "What lights you up?", subtitle: "Your interests shape which careers we surface." },
-  { id: "skills", title: "What can you do?", subtitle: "Honest skill inventory — no judgment." },
-  { id: "fears", title: "What worries you?", subtitle: "Your concerns help us address real anxieties." },
-  { id: "goals", title: "What do you want?", subtitle: "Optional context to make paths more specific." },
+  { id: "identity", title: "Identity", icon: User, description: "Tell us who you are" },
+  { id: "context", title: "Context", icon: Target, description: "Your current stage" },
+  { id: "signals", title: "Signals", icon: Brain, description: "Interests & Skills" },
+  { id: "vision", title: "Vision", icon: Zap, description: "Aspirations & Fears" },
 ];
-
-const INTEREST_OPTIONS = [
-  "Coding", "Business", "Design", "Writing", "Science", "Math",
-  "Psychology", "Healthcare", "Education", "Art", "Music", "Film",
-  "Sustainability", "Finance", "Law", "Research", "Sports", "Gaming",
-];
-
-const SKILL_OPTIONS = [
-  "Basic Python", "JavaScript", "Figma", "Excel", "Public Speaking",
-  "Writing", "Research", "Data Analysis", "Video Editing", "Canva",
-  "Communication", "Leadership", "Problem Solving", "Critical Thinking",
-];
-
-const FEAR_OPTIONS = [
-  "AI replacing my job", "Choosing the wrong career", "Not earning enough",
-  "Being stuck in one field", "Not being technical enough", "Falling behind peers",
-  "Wasting my degree", "Picking the wrong major",
-];
-
-const WORK_STYLES = ["Builder", "Researcher", "Helper", "Creative", "Analyst", "Leader", "Independent", "Collaborative"];
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [step, setStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({
+  const [formData, setFormData] = useState({
     name: "",
-    age: "",
+    age: "18",
     education_stage: "high_school",
-    location: "India",
     interests: [] as string[],
-    favorite_subjects: [] as string[],
     current_skills: [] as string[],
-    work_style_preferences: [] as string[],
     career_fears: [] as string[],
-    dream_careers: "",
-    disliked_careers: "",
-    weekly_time_available: "5-7 hours",
-    optional_profile_text: "",
+    dream_careers: [] as string[],
   });
 
-  const toggleItem = (key: keyof typeof form, value: string) => {
-    const arr = form[key] as string[];
-    const updated = arr.includes(value) ? arr.filter((i) => i !== value) : [...arr, value];
-    setForm({ ...form, [key]: updated });
-  };
+  const progress = ((currentStep + 1) / STEPS.length) * 100;
 
-  const isSelected = (key: keyof typeof form, value: string) =>
-    (form[key] as string[]).includes(value);
-
-  const splitList = (value: string) =>
-    value
-      .split(",")
-      .map((x) => x.trim())
-      .filter((x) => x.length >= 2);
+  const isMeaningful = (value: string) => value.trim().replace(/[^a-zA-Z0-9]/g, "").length >= 2;
 
   const validateStep = () => {
-    const trimmedName = form.name.trim();
-    const age = form.age ? Number(form.age) : undefined;
-
-    if (step === 0) {
-      if (trimmedName.length < 2) return "Please enter a real name with at least 2 characters.";
-      if (age !== undefined && (Number.isNaN(age) || age < 10 || age > 30)) return "Age should be between 10 and 30.";
-      if (!form.weekly_time_available) return "Please select weekly time availability.";
+    if (currentStep === 0) {
+      if (!isMeaningful(formData.name)) return "Please enter a real name with at least 2 characters.";
+      const age = Number(formData.age);
+      if (!Number.isFinite(age) || age < 10 || age > 30) return "Please enter an age between 10 and 30.";
     }
-
-    if (step === 1) {
-      if (form.interests.length < 2) return "Pick at least 2 interests so Daedalus has enough signal.";
-      if (form.favorite_subjects.length < 1) return "Pick at least 1 favourite subject.";
-      if (form.work_style_preferences.length < 1) return "Pick at least 1 work style.";
+    if (currentStep === 1) {
+      if (!formData.education_stage) return "Please select your current education stage.";
     }
-
-    if (step === 2 && form.current_skills.length < 2) {
-      return "Pick at least 2 current skills. Honest beginner skills are fine.";
+    if (currentStep === 2) {
+      if (formData.interests.length < 2) return "Add at least 2 interests. Press Enter after each one.";
+      if (formData.current_skills.length < 2) return "Add at least 2 current skills. Press Enter after each one.";
     }
-
-    if (step === 3 && form.career_fears.length < 1) {
-      return "Pick at least 1 career concern. This helps the AI exposure analysis.";
+    if (currentStep === 3) {
+      if (formData.career_fears.length < 1) return "Add at least 1 career concern or fear. Press Enter after typing it.";
     }
-
-    if (step === 4) {
-      const dreamCareers = splitList(form.dream_careers);
-      const dislikedCareers = splitList(form.disliked_careers);
-      if (form.dream_careers.trim() && dreamCareers.length === 0) return "Dream careers should contain at least one meaningful word, or leave it blank.";
-      if (form.disliked_careers.trim() && dislikedCareers.length === 0) return "Disliked careers should contain at least one meaningful word, or leave it blank.";
-    }
-
     return null;
   };
 
@@ -109,275 +73,212 @@ export default function OnboardingPage() {
       setError(validationError);
       return;
     }
-
     setError(null);
-
-    if (step < STEPS.length - 1) {
-      setStep(step + 1);
-      return;
+    if (currentStep < STEPS.length - 1) {
+      setCurrentStep(prev => prev + 1);
+    } else {
+      handleSubmit();
     }
+  };
 
-    const profile: StudentProfileInput = {
-      name: form.name.trim(),
-      age: form.age ? Number(form.age) : undefined,
-      education_stage: form.education_stage as StudentProfileInput["education_stage"],
-      location: form.location.trim() || undefined,
-      interests: form.interests,
-      favorite_subjects: form.favorite_subjects,
-      current_skills: form.current_skills,
-      work_style_preferences: form.work_style_preferences,
-      career_fears: form.career_fears,
-      dream_careers: splitList(form.dream_careers),
-      disliked_careers: splitList(form.disliked_careers),
-      weekly_time_available: form.weekly_time_available,
-      optional_profile_text: form.optional_profile_text.trim() || undefined,
-    };
+  const handleSubmit = () => {
+    setLoading(true);
+    const interests = formData.interests.map(item => item.trim()).filter(Boolean);
+    const skills = formData.current_skills.map(item => item.trim()).filter(Boolean);
+    const fears = formData.career_fears.map(item => item.trim()).filter(Boolean);
 
-    savePendingProfile(profile);
+    savePendingProfile({
+      name: formData.name.trim(),
+      age: Number(formData.age),
+      education_stage: formData.education_stage as any,
+      location: "Global",
+      interests,
+      favorite_subjects: interests,
+      current_skills: skills,
+      career_fears: fears,
+      dream_careers: formData.dream_careers.length > 0 ? formData.dream_careers : [interests[0]],
+      disliked_careers: [],
+      work_style_preferences: ["building", "autonomous"],
+      weekly_time_available: "5-10 hours",
+      optional_profile_text: `Interest profile: ${interests.join(", ")}`
+    });
+
     router.push("/loading");
   };
 
-  const progress = ((step + 1) / STEPS.length) * 100;
+  const addItem = (key: 'interests' | 'current_skills' | 'career_fears' | 'dream_careers', value: string) => {
+    const clean = value.trim().replace(/\s+/g, " ");
+    if (!isMeaningful(clean)) {
+      setError("Please enter a meaningful value with at least 2 characters.");
+      return;
+    }
+    setError(null);
+    setFormData(prev => ({
+      ...prev,
+      [key]: Array.from(new Set([...prev[key], clean])).slice(0, 8)
+    }));
+  };
 
   return (
-    <main>
-      <Navbar />
-      <div className="pt-36 pb-24 px-4 min-h-screen">
-        <div className="max-w-2xl mx-auto">
-          {/* Progress */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[12px] text-slate-400">Step {step + 1} of {STEPS.length}</span>
-              <span className="text-[12px] text-blue-500 font-medium">{Math.round(progress)}%</span>
-            </div>
-            <div className="meter-bar">
-              <div className="meter-fill transition-all duration-500" style={{ width: `${progress}%` }} />
-            </div>
-            {/* Step dots */}
-            <div className="flex justify-between mt-3">
-              {STEPS.map((s, i) => (
-                <div key={s.id} className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold transition-all ${i < step ? "bg-blue-500 text-white" : i === step ? "bg-white border-2 border-blue-400 text-blue-500" : "bg-white/50 border border-slate-200 text-slate-300"}`}>
-                  {i < step ? <Check size={10} /> : i + 1}
-                </div>
-              ))}
-            </div>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-500">
+      {/* Floating Theme Controller */}
+      <div className="absolute top-8 right-8 z-50">
+        <ThemeToggle />
+      </div>
+
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/5 rounded-full blur-[120px]" />
+
+      <div className="w-full max-w-2xl z-10">
+        <div className="mb-12 text-center space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-widest">
+            <Sparkles className="w-3 h-3" /> Kernel_Initialization
+          </div>
+          <h1 className="text-3xl font-black tracking-tight">System Onboarding</h1>
+          <div className="flex items-center justify-center gap-2 mt-4">
+            {STEPS.map((step, idx) => (
+              <div key={step.id} className="flex items-center">
+                <div className={cn(
+                  "w-2 h-2 rounded-full transition-all duration-500",
+                  idx <= currentStep ? "bg-primary w-6" : "bg-muted"
+                )} />
+                {idx < STEPS.length - 1 && <div className="w-4 h-[1px] bg-border mx-1" />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <Card className="border-primary/10 shadow-premium overflow-hidden bg-card/50 backdrop-blur-xl">
+          <div className="h-1 w-full bg-muted">
+            <motion.div className="h-full bg-primary" initial={{ width: 0 }} animate={{ width: `${progress}%` }} />
           </div>
 
-          {/* Card */}
-          <div className="glass-strong rounded-3xl p-8">
-            <h2 className="font-display text-3xl font-bold text-slate-800 mb-1">{STEPS[step].title}</h2>
-            <p className="text-slate-400 text-[14px] mb-8">{STEPS[step].subtitle}</p>
+          <CardContent className="p-10">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStep}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-8"
+              >
+                {currentStep === 0 && (
+                  <div className="space-y-6">
+                    <StepHeader step={STEPS[0]} />
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Subject Name</label>
+                        <Input placeholder="e.g. Alex Rivera" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="h-12 bg-muted/20 border-none focus-visible:ring-primary/20" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Age</label>
+                        <Input type="number" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="h-12 bg-muted/20 border-none focus-visible:ring-primary/20" />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-            {/* Step 0: Basics */}
-            {step === 0 && (
-              <div className="space-y-5">
-                <div>
-                  <label className="text-[12px] font-semibold text-slate-600 uppercase tracking-widest block mb-2">Your name *</label>
-                  <input
-                    type="text"
-                    placeholder="Enter your name"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-white/60 border border-white/90 text-slate-800 placeholder-slate-300 focus:outline-none focus:border-blue-300 focus:bg-white/80 transition-all text-[14px]"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[12px] font-semibold text-slate-600 uppercase tracking-widest block mb-2">Age</label>
-                    <input
-                      type="number"
-                      placeholder="16"
-                      value={form.age}
-                      onChange={(e) => setForm({ ...form, age: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl bg-white/60 border border-white/90 text-slate-800 placeholder-slate-300 focus:outline-none focus:border-blue-300 transition-all text-[14px]"
-                    />
+                {currentStep === 1 && (
+                  <div className="space-y-6">
+                    <StepHeader step={STEPS[1]} />
+                    <div className="grid grid-cols-2 gap-4">
+                      {["middle_school", "high_school", "early_college", "college", "early_professional"].map(stage => (
+                        <button
+                          key={stage}
+                          onClick={() => setFormData({...formData, education_stage: stage})}
+                          className={cn(
+                            "p-4 rounded-xl border text-left transition-all",
+                            formData.education_stage === stage ? "bg-primary/5 border-primary shadow-sm" : "bg-muted/30 hover:border-primary/30"
+                          )}
+                        >
+                          <span className={cn("text-xs font-bold capitalize", formData.education_stage === stage ? "text-primary" : "text-muted-foreground")}>
+                            {stage.replace('_', ' ')}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-[12px] font-semibold text-slate-600 uppercase tracking-widest block mb-2">Stage *</label>
-                    <select
-                      value={form.education_stage}
-                      onChange={(e) => setForm({ ...form, education_stage: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl bg-white/60 border border-white/90 text-slate-700 focus:outline-none focus:border-blue-300 transition-all text-[14px]"
-                    >
-                      <option value="middle_school">Middle School</option>
-                      <option value="high_school">High School</option>
-                      <option value="early_college">Early College</option>
-                      <option value="college">College</option>
-                      <option value="early_professional">Early Professional</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[12px] font-semibold text-slate-600 uppercase tracking-widest block mb-2">Weekly time available *</label>
-                  <div className="flex flex-wrap gap-2">
-                    {["2-4 hours", "5-7 hours", "8+ hours"].map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setForm({ ...form, weekly_time_available: t })}
-                        className={`px-4 py-2 rounded-full text-[13px] font-medium border transition-all ${form.weekly_time_available === t ? "bg-blue-500 text-white border-blue-500" : "bg-white/60 text-slate-600 border-white/90 hover:bg-white/80"}`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+                )}
 
-            {/* Step 1: Interests */}
-            {step === 1 && (
-              <div className="space-y-6">
-                <div>
-                  <label className="text-[12px] font-semibold text-slate-600 uppercase tracking-widest block mb-3">Interests * (pick at least 2)</label>
-                  <div className="flex flex-wrap gap-2">
-                    {INTEREST_OPTIONS.map((item) => (
-                      <button
-                        key={item}
-                        onClick={() => toggleItem("interests", item)}
-                        className={`px-4 py-2 rounded-full text-[13px] font-medium border transition-all ${isSelected("interests", item) ? "bg-blue-500 text-white border-blue-500" : "bg-white/60 text-slate-600 border-white/90 hover:bg-white/80"}`}
-                      >
-                        {item}
-                      </button>
-                    ))}
+                {currentStep === 2 && (
+                  <div className="space-y-6">
+                    <StepHeader step={STEPS[2]} />
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Primary Interests</label>
+                        <Input placeholder="e.g. AI, Music, Finance..." onKeyDown={e => { if(e.key === 'Enter') { addItem('interests', e.currentTarget.value); e.currentTarget.value = ''; }}} className="h-12 bg-muted/20 border-none focus-visible:ring-primary/20" />
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          {formData.interests.map(i => <Badge key={i} variant="secondary">{i}</Badge>)}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Current Skills</label>
+                        <Input placeholder="e.g. Python, Design, Writing..." onKeyDown={e => { if(e.key === 'Enter') { addItem('current_skills', e.currentTarget.value); e.currentTarget.value = ''; }}} className="h-12 bg-muted/20 border-none focus-visible:ring-primary/20" />
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          {formData.current_skills.map(s => <Badge key={s} variant="outline" className="text-emerald-500 border-emerald-500/20">{s}</Badge>)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <label className="text-[12px] font-semibold text-slate-600 uppercase tracking-widest block mb-3">Favourite subjects * (pick at least 1)</label>
-                  <div className="flex flex-wrap gap-2">
-                    {["Computer Science", "Mathematics", "Economics", "Biology", "Chemistry", "Physics", "English", "History", "Art", "Psychology", "Statistics", "Business"].map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => toggleItem("favorite_subjects", s)}
-                        className={`px-4 py-2 rounded-full text-[13px] font-medium border transition-all ${isSelected("favorite_subjects", s) ? "bg-indigo-500 text-white border-indigo-500" : "bg-white/60 text-slate-600 border-white/90 hover:bg-white/80"}`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[12px] font-semibold text-slate-600 uppercase tracking-widest block mb-3">Work style * (pick any)</label>
-                  <div className="flex flex-wrap gap-2">
-                    {WORK_STYLES.map((ws) => (
-                      <button
-                        key={ws}
-                        onClick={() => toggleItem("work_style_preferences", ws)}
-                        className={`px-4 py-2 rounded-full text-[13px] font-medium border transition-all ${isSelected("work_style_preferences", ws) ? "bg-violet-500 text-white border-violet-500" : "bg-white/60 text-slate-600 border-white/90 hover:bg-white/80"}`}
-                      >
-                        {ws}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+                )}
 
-            {/* Step 2: Skills */}
-            {step === 2 && (
-              <div className="space-y-5">
-                <div>
-                  <label className="text-[12px] font-semibold text-slate-600 uppercase tracking-widest block mb-3">Current skills * (pick at least 2)</label>
-                  <div className="flex flex-wrap gap-2">
-                    {SKILL_OPTIONS.map((skill) => (
-                      <button
-                        key={skill}
-                        onClick={() => toggleItem("current_skills", skill)}
-                        className={`px-4 py-2 rounded-full text-[13px] font-medium border transition-all ${isSelected("current_skills", skill) ? "bg-emerald-500 text-white border-emerald-500" : "bg-white/60 text-slate-600 border-white/90 hover:bg-white/80"}`}
-                      >
-                        {skill}
-                      </button>
-                    ))}
+                {currentStep === 3 && (
+                  <div className="space-y-6">
+                    <StepHeader step={STEPS[3]} />
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Dream Careers</label>
+                        <Input placeholder="e.g. Startup Founder, Researcher..." onKeyDown={e => { if(e.key === 'Enter') { addItem('dream_careers', e.currentTarget.value); e.currentTarget.value = ''; }}} className="h-12 bg-muted/20 border-none focus-visible:ring-primary/20" />
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          {formData.dream_careers.map(c => <Badge key={c} variant="secondary">{c}</Badge>)}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                          <ShieldAlert className="w-3 h-3 text-amber-500" /> Career Fears
+                        </label>
+                        <Input placeholder="e.g. Automation, Stagnation..." onKeyDown={e => { if(e.key === 'Enter') { addItem('career_fears', e.currentTarget.value); e.currentTarget.value = ''; }}} className="h-12 bg-muted/20 border-none focus-visible:ring-primary/20" />
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          {formData.career_fears.map(f => <Badge key={f} variant="outline" className="text-amber-500 border-amber-500/20">{f}</Badge>)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <label className="text-[12px] font-semibold text-slate-600 uppercase tracking-widest block mb-2">Anything else to add?</label>
-                  <textarea
-                    rows={3}
-                    placeholder="e.g. I've built small school projects, I help friends with tech..."
-                    value={form.optional_profile_text}
-                    onChange={(e) => setForm({ ...form, optional_profile_text: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-white/60 border border-white/90 text-slate-800 placeholder-slate-300 focus:outline-none focus:border-blue-300 transition-all text-[14px] resize-none"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Fears */}
-            {step === 3 && (
-              <div>
-                <label className="text-[12px] font-semibold text-slate-600 uppercase tracking-widest block mb-3">Career concerns * (pick at least 1)</label>
-                <div className="flex flex-wrap gap-2">
-                  {FEAR_OPTIONS.map((fear) => (
-                    <button
-                      key={fear}
-                      onClick={() => toggleItem("career_fears", fear)}
-                      className={`px-4 py-2 rounded-full text-[13px] font-medium border transition-all ${isSelected("career_fears", fear) ? "bg-amber-500 text-white border-amber-500" : "bg-white/60 text-slate-600 border-white/90 hover:bg-white/80"}`}
-                    >
-                      {fear}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Goals */}
-            {step === 4 && (
-              <div className="space-y-5">
-                <div>
-                  <label className="text-[12px] font-semibold text-slate-600 uppercase tracking-widest block mb-2">Dream careers (optional)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Software engineer, startup founder..."
-                    value={form.dream_careers}
-                    onChange={(e) => setForm({ ...form, dream_careers: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-white/60 border border-white/90 text-slate-800 placeholder-slate-300 focus:outline-none focus:border-blue-300 transition-all text-[14px]"
-                  />
-                </div>
-                <div>
-                  <label className="text-[12px] font-semibold text-slate-600 uppercase tracking-widest block mb-2">Careers you definitely don&apos;t want (optional)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Pure theory research, sales..."
-                    value={form.disliked_careers}
-                    onChange={(e) => setForm({ ...form, disliked_careers: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-white/60 border border-white/90 text-slate-800 placeholder-slate-300 focus:outline-none focus:border-blue-300 transition-all text-[14px]"
-                  />
-                </div>
-                <div className="glass rounded-2xl p-4">
-                  <p className="text-[12px] text-slate-500 leading-relaxed">
-                    <span className="font-semibold text-slate-700">Ready to generate.</span> Daedalus will analyze your profile and return three personalized career paths with AI exposure, skill gaps, and a 7-day sprint.
-                  </p>
-                </div>
-              </div>
-            )}
+                )}
+              </motion.div>
+            </AnimatePresence>
 
             {error && (
-              <div className="mt-6 rounded-2xl border border-amber-100 bg-amber-50/80 px-4 py-3 text-[13px] text-amber-700">
+              <div className="mt-8 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
                 {error}
               </div>
             )}
 
-            {/* Nav buttons */}
-            <div className="flex gap-3 mt-8">
-              {step > 0 && (
-                <button
-                  onClick={() => { setError(null); setStep(step - 1); }}
-                  className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/60 border border-white/90 text-slate-600 font-medium text-[14px] hover:bg-white/80 transition-all"
-                >
-                  <ArrowLeft size={14} /> Back
-                </button>
-              )}
-              <button
-                onClick={handleNext}
-                className="group flex items-center justify-center gap-2 flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold text-[14px] shadow-md hover:shadow-lg hover:scale-[1.02] transition-all"
-              >
-                {step === STEPS.length - 1 ? "Generate My Paths" : "Continue"}
-                <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-              </button>
+            <div className="mt-12 flex items-center justify-between">
+              <Button variant="ghost" onClick={() => setCurrentStep(prev => prev - 1)} disabled={currentStep === 0 || loading} className="gap-2">
+                <ArrowLeft className="w-4 h-4" /> Back
+              </Button>
+              <Button onClick={handleNext} disabled={loading} className="min-w-[140px] gap-2 shadow-premium h-11">
+                {loading ? "Running Neural Mapping..." : currentStep === STEPS.length - 1 ? "Initialize OS" : "Continue"}
+                {!loading && <ArrowRight className="w-4 h-4" />}
+              </Button>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
-    </main>
+    </div>
+  );
+}
+
+function StepHeader({ step }: { step: any }) {
+  const Icon = step.icon;
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-primary/10 rounded-lg"><Icon className="w-5 h-5 text-primary" /></div>
+        <h2 className="text-xl font-bold">{step.title}</h2>
+      </div>
+      <p className="text-muted-foreground text-sm">{step.description}</p>
+    </div>
   );
 }

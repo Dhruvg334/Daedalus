@@ -1,92 +1,139 @@
 "use client";
+
 import { useEffect, useState } from "react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import Link from "next/link";
-import { ArrowRight, Zap } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  ArrowRight,
+  Zap,
+  UserCircle2,
+  Sparkles,
+  ChevronRight,
+  ShieldCheck,
+  BrainCircuit,
+  Activity
+} from "lucide-react";
 import { getDemoPersonas } from "@/lib/api";
 import type { DemoPersona } from "@/lib/types";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 export default function DemoPersonasPage() {
   const [personas, setPersonas] = useState<DemoPersona[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     getDemoPersonas()
       .then((res) => setPersonas(res.personas))
-      .catch((e) => setError(e instanceof Error ? e.message : "Unable to load demo personas."));
+      .finally(() => setLoading(false));
   }, []);
 
   return (
-    <main>
-      <Navbar />
-      <div className="pt-36 pb-24 px-4 min-h-screen">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-6">
-              <Zap size={13} className="text-amber-500" />
-              <span className="text-[12px] font-semibold text-slate-600 tracking-wide uppercase">One-click simulation</span>
+    <DashboardShell>
+      <div className="max-w-5xl mx-auto space-y-10">
+        {/* Header */}
+        <section className="space-y-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-2 text-primary">
+              <UserCircle2 className="w-4 h-4" />
+              <span className="text-xs font-bold uppercase tracking-widest">Persona Library // v1.1</span>
             </div>
-            <h1 className="font-display text-5xl font-bold text-slate-800 tracking-tight mb-4">
-              Choose a demo <span className="shimmer-text">persona</span>
-            </h1>
-            <p className="text-slate-500 max-w-md mx-auto">
-              Select a pre-built profile and generate a complete career simulation using the backend API.
+            <h1 className="text-4xl font-extrabold tracking-tight">Select Subject for Simulation</h1>
+            <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
+              Choose a pre-configured cognitive profile to test the deterministic mapping and evolutionary projection engine.
             </p>
           </div>
+        </section>
 
-          {error && <div className="glass-card rounded-2xl p-5 text-center text-red-500 mb-6">{error}</div>}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
-            {personas.map((p, index) => {
-              const gradient = ["from-blue-400 to-indigo-500", "from-violet-400 to-purple-500", "from-emerald-400 to-teal-500", "from-amber-400 to-orange-500"][index % 4];
-              return (
-                <div key={p.persona_id} className="glass-card rounded-3xl p-7">
-                  <div className="flex items-start gap-4 mb-5">
-                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white font-bold text-xl shadow-lg flex-shrink-0`}>
-                      {p.name.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="font-display font-bold text-slate-800 text-xl">{p.name}</div>
-                      <div className="text-slate-400 text-[12px]">Age {p.age || "—"} · {p.work_style} · {p.weekly_time_available}</div>
-                    </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {loading ? (
+            [1, 2, 3, 4].map(i => <div key={i} className="h-64 rounded-2xl bg-muted animate-pulse" />)
+          ) : (
+            personas.map((p, idx) => (
+              <motion.div
+                key={p.persona_id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <Card className="h-full group hover:border-primary/50 transition-all duration-500 overflow-hidden relative shadow-sm">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <BrainCircuit className="w-20 h-20 text-primary" />
                   </div>
 
-                  <p className="text-slate-600 text-[14px] leading-relaxed mb-5">{p.headline}</p>
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-lg border border-primary/20">
+                        {p.name.slice(0, 1)}
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl">{p.name}</CardTitle>
+                        <CardDescription className="text-[10px] font-mono uppercase tracking-tighter">
+                          ID: {p.persona_id} // AGE: {p.age || "18"}
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed italic">
+                      "{p.headline}"
+                    </p>
+                  </CardHeader>
 
-                  <div className="space-y-3 mb-5">
-                    <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1.5">Interests</div>
-                      <div className="flex flex-wrap gap-1">{p.interests.map((tag) => <span key={tag} className="chip text-[11px]">{tag}</span>)}</div>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-1.5">
+                        {p.interests.slice(0, 3).map(i => (
+                          <Badge key={i} variant="secondary" className="text-[10px] bg-primary/5 text-primary border-primary/10">{i}</Badge>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {p.current_skills.slice(0, 3).map(s => (
+                          <Badge key={s} variant="outline" className="text-[10px] border-emerald-500/20 text-emerald-600">{s}</Badge>
+                        ))}
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1.5">Current skills</div>
-                      <div className="flex flex-wrap gap-1">{p.current_skills.map((tag) => <span key={tag} className="chip text-[11px]">{tag}</span>)}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-widest text-amber-500 mb-1.5">Career fears</div>
-                      <div className="flex flex-wrap gap-1">{p.career_fears.map((f) => <span key={f} className="chip chip-gap text-[11px]">{f}</span>)}</div>
-                    </div>
-                  </div>
 
-                  <Link href={`/loading?persona=${p.persona_id}`} className="group flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold text-[14px] shadow-md shadow-blue-200/50 hover:shadow-lg hover:scale-[1.02] transition-all">
-                    Simulate {p.name}&apos;s profile
-                    <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                  </Link>
-                </div>
-              );
-            })}
+                    <div className="pt-4 border-t border-border/50">
+                      <Button
+                        className="w-full justify-between group shadow-sm"
+                        asChild
+                      >
+                        <Link href={`/loading?persona=${p.persona_id}`}>
+                          Initialize Simulation
+                          <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))
+          )}
+        </div>
+
+        {/* Global Footer Stats */}
+        <div className="pt-10 flex flex-col md:flex-row items-center justify-between gap-6 opacity-40 grayscale hover:grayscale-0 transition-all">
+          <div className="flex items-center gap-6">
+            <SystemStat label="Simulations_Active" value="1,402" />
+            <div className="w-px h-8 bg-border" />
+            <SystemStat label="Mean_Confidence" value="94.2%" />
           </div>
-
-          <div className="text-center glass-card rounded-2xl p-6">
-            <p className="text-slate-500 text-[14px] mb-3">Want to enter your own details instead?</p>
-            <Link href="/onboarding" className="inline-flex items-center gap-2 text-blue-600 font-semibold text-[14px] hover:text-blue-700">
-              Start the career quiz <ArrowRight size={14} />
-            </Link>
-          </div>
+          <p className="text-[8px] font-mono uppercase tracking-[0.3em]">Daedalus_OS // Demo_Environment_Access</p>
         </div>
       </div>
-      <Footer />
-    </main>
+    </DashboardShell>
+  );
+}
+
+function SystemStat({ label, value }: { label: string, value: string }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-[8px] font-bold uppercase tracking-widest">{label}</p>
+      <p className="text-sm font-black font-mono">{value}</p>
+    </div>
   );
 }

@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api.v1 import health, demo_personas, simulate, simulations, feedback
+from .api.v1 import health, demo_personas, simulate, simulations, feedback, auth, assistant, hubs, progress
 from .core.config import settings
 from .core.database import Base, engine
 
@@ -12,6 +12,7 @@ from .models.user import User
 from .models.simulation import Simulation
 from .models.persona import DemoPersona
 from .models.feedback import Feedback
+from .models.progress import UserProgress
 
 # Create all tables on startup
 Base.metadata.create_all(bind=engine)
@@ -33,15 +34,22 @@ async def global_exception_handler(request: Request, exc: Exception):
             "error": {
                 "code": "INTERNAL_ERROR",
                 "message": "Unexpected server error. Please try again.",
-                "details": None,
+                "details": str(exc),
             },
         },
     )
 
 # CORS is environment-driven so local and deployed frontends can be configured safely.
+import re as _re
+
+def _is_dev_origin(origin: str) -> bool:
+    """Accept any localhost/127.0.0.1 origin in development."""
+    return bool(_re.match(r"https?://(localhost|127\.0\.0\.1)(:\d+)?$", origin or ""))
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,6 +61,10 @@ app.include_router(demo_personas.router, prefix=f"{settings.API_V1_STR}/demo-per
 app.include_router(simulate.router, prefix=f"{settings.API_V1_STR}/simulate", tags=["simulate"])
 app.include_router(simulations.router, prefix=f"{settings.API_V1_STR}/simulations", tags=["simulations"])
 app.include_router(feedback.router, prefix=f"{settings.API_V1_STR}/feedback", tags=["feedback"])
+app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+app.include_router(assistant.router, prefix=f"{settings.API_V1_STR}/assistant", tags=["assistant"])
+app.include_router(hubs.router, prefix=f"{settings.API_V1_STR}/hubs", tags=["hubs"])
+app.include_router(progress.router, prefix=f"{settings.API_V1_STR}/progress", tags=["progress"])
 
 @app.get("/")
 async def root():

@@ -1,4 +1,12 @@
-import type { DemoPersona, SimulationRequest, SimulationResponse } from "./types";
+import type {
+  DemoPersona,
+  SimulationRequest,
+  SimulationResponse,
+  AssistantMessage,
+  AssistantChatResponse,
+  OpportunityResponse,
+  LearningHubResponse
+} from "./types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
@@ -60,6 +68,61 @@ export function simulateCareerPaths(payload: SimulationRequest) {
   });
 }
 
-export function getSimulationById(simulationId: string) {
-  return request<SimulationResponse>(`/api/v1/simulations/${simulationId}`);
+export function getSimulationById(simulation_id: string) {
+  return request<SimulationResponse>(`/api/v1/simulations/${simulation_id}`);
+}
+
+export function submitFeedback(simulation_id: string, rating: number) {
+  return request<{ success: true }>("/api/v1/feedback", {
+    method: "POST",
+    body: JSON.stringify({ simulation_id, rating }),
+  });
+}
+
+// --- PHASE 4 API ---
+
+export function chatWithAssistant(messages: AssistantMessage[], simulation_id?: string) {
+  return request<AssistantChatResponse>("/api/v1/assistant/chat", {
+    method: "POST",
+    body: JSON.stringify({ messages, simulation_id }),
+  });
+}
+
+export function getOpportunities(career_id: string, simulation_id: string) {
+  return request<OpportunityResponse>("/api/v1/hubs/opportunities", {
+    method: "POST",
+    body: JSON.stringify({ career_id, simulation_id }),
+  });
+}
+
+export function getLearningPath(career_id: string) {
+  return request<LearningHubResponse>(`/api/v1/hubs/learning-path/${career_id}`);
+}
+
+export function runAutomation(type: string, simulation_id: string, instructions?: string) {
+  return request<{ content: string }>("/api/v1/assistant/automate", {
+    method: "POST",
+    body: JSON.stringify({
+      automation_type: type,
+      simulation_id,
+      additional_instructions: instructions
+    }),
+  });
+}
+
+export function getProgress(simulation_id: string) {
+  return request<any>(`/api/v1/progress/${simulation_id}`);
+}
+
+export function updateProgress(payload: {
+  simulation_id: string,
+  resource_id?: string,
+  task_id?: string,
+  skill?: string,
+  hours?: number
+}) {
+  return request<any>("/api/v1/progress/update", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

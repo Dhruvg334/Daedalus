@@ -9,6 +9,7 @@ class SimulationRepository:
 
     def create(self, user_id: UUID, raw_input: dict, result: dict) -> Simulation:
         db_obj = Simulation(
+            simulation_id=result.get("simulation_id", str(user_id)),
             user_id=user_id,
             raw_input_json=raw_input,
             result_json=result,
@@ -18,6 +19,23 @@ class SimulationRepository:
         self.db.commit()
         self.db.refresh(db_obj)
         return db_obj
+
+    def create_anonymous(self, simulation_id: str, raw_input: dict, result: dict) -> Simulation:
+        """Persist a simulation without requiring a user account."""
+        db_obj = Simulation(
+            simulation_id=simulation_id,
+            user_id=None,
+            raw_input_json=raw_input,
+            result_json=result,
+            status="completed"
+        )
+        self.db.add(db_obj)
+        self.db.commit()
+        self.db.refresh(db_obj)
+        return db_obj
+
+    def get_by_simulation_id(self, simulation_id: str) -> Optional[Simulation]:
+        return self.db.query(Simulation).filter(Simulation.simulation_id == simulation_id).first()
 
     def get(self, simulation_id: UUID) -> Optional[Simulation]:
         return self.db.query(Simulation).filter(Simulation.id == simulation_id).first()

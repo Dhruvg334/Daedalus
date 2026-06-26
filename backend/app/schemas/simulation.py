@@ -54,11 +54,29 @@ class RoadmapStep(BaseModel):
     description: str
     estimated_time: str
 
+class CareerMilestone(BaseModel):
+    period: str
+    title: str
+    description: str
+    unlocked_capabilities: List[str]
+    risk_factor: float = 0.2
+
+class FutureSelf(BaseModel):
+    narrative: str
+    headline: str
+    future_resume_highlights: List[str]
+
+class RiskPoint(BaseModel):
+    category: str # e.g. "Automation", "Market Shift", "Skill Obsolescence"
+    score: float # 0 to 1
+    description: str
+
 class CareerPath(BaseModel):
     career_id: str
     title: str
     cluster: str
     one_line_summary: str
+    mission_statement: str = "Empower users through intelligent career navigation."
     fit_score: int
     ai_exposure_score: int
     difficulty_score: int
@@ -72,6 +90,9 @@ class CareerPath(BaseModel):
     ai_exposure_breakdown: List[AIExposureBreakdown]
     starter_project: StarterProject
     learning_roadmap: List[RoadmapStep]
+    evolution_timeline: List[CareerMilestone] = Field(default_factory=list)
+    future_self: Optional[FutureSelf] = None
+    risk_heatmap: List[RiskPoint] = Field(default_factory=list)
 
 class ComparisonRow(BaseModel):
     career_id: str
@@ -98,10 +119,17 @@ class SkillMatrixItem(BaseModel):
     target_level: int
     relevant_career_ids: List[str]
 
+class SkillTreeNode(BaseModel):
+    id: str
+    label: str
+    status: Literal["mastered", "learning", "locked"]
+    children: List["SkillTreeNode"] = Field(default_factory=list)
+
 class SkillGapAnalysis(BaseModel):
     top_existing_skills: List[str]
     highest_priority_gaps: List[PriorityGap]
     skill_matrix: List[SkillMatrixItem]
+    skill_tree: List[SkillTreeNode] = Field(default_factory=list)
 
 class SprintDay(BaseModel):
     day: int
@@ -126,10 +154,15 @@ class Trace(BaseModel):
     steps: List[TraceStep]
     warnings: List[str]
 
+class CareerDNATrait(BaseModel):
+    label: str
+    value: float
+
 class SimulationResult(BaseModel):
     simulation_id: str
     created_at: datetime
     student_summary: StudentSummary
+    career_dna: List[CareerDNATrait] = Field(default_factory=list)
     career_paths: List[CareerPath]
     comparison: Comparison
     skill_gap_analysis: SkillGapAnalysis
