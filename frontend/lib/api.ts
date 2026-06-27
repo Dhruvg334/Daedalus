@@ -5,7 +5,8 @@ import type {
   AssistantMessage,
   AssistantChatResponse,
   OpportunityResponse,
-  LearningHubResponse
+  LearningHubResponse,
+  Simulation
 } from "./types";
 
 const API_BASE_URL = (
