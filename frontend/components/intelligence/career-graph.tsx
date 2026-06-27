@@ -86,45 +86,48 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number,
 
 function buildLayout(simulation: Simulation, size: { width: number; height: number }, expanded: boolean): GraphLayout {
   const visibleCareers = simulation.career_paths.slice(0, expanded ? 5 : 3)
-  const pad = expanded ? 88 : 60
-  const subjectRadius = expanded ? 52 : 44
-  const careerRadius = expanded ? 44 : 38
+  const subjectRadius = expanded ? 42 : 34
+  const careerRadius = expanded ? 36 : 30
+  const pad = expanded ? 74 : 52
 
-  const centerX = size.width / 2
-  const centerY = expanded ? size.height * 0.52 : size.height * 0.54
-  const maxHorizontal = Math.max(120, size.width / 2 - pad - careerRadius)
-  const maxVertical = Math.max(100, size.height / 2 - pad - careerRadius)
-  const ring = Math.min(maxHorizontal, maxVertical, expanded ? 260 : 180)
+  const point = (nx: number, ny: number, r: number) => ({
+    x: clamp(size.width * nx, pad + r, size.width - pad - r),
+    y: clamp(size.height * ny, pad + r, size.height - pad - r),
+  })
 
-  const anglesByCount: Record<number, number[]> = {
-    1: [-90],
-    2: [-135, -45],
-    3: [-90, -150, -30],
-    4: [-100, -165, -15, 70],
-    5: [-90, -160, -25, 150, 35],
-  }
-  const angles = anglesByCount[visibleCareers.length] || anglesByCount[3]
-
+  const subjectPoint = point(0.5, expanded ? 0.54 : 0.54, subjectRadius)
   const subject: GraphNode = {
     id: "subject",
     label: "YOU",
     subtitle: simulation.student_summary?.name || "Profile",
-    x: centerX,
-    y: centerY,
+    x: subjectPoint.x,
+    y: subjectPoint.y,
     r: subjectRadius,
   }
 
+  const normalizedPositions = expanded
+    ? [
+        [0.5, 0.22],
+        [0.26, 0.48],
+        [0.74, 0.48],
+        [0.34, 0.78],
+        [0.66, 0.78],
+      ]
+    : [
+        [0.5, 0.24],
+        [0.27, 0.68],
+        [0.73, 0.68],
+      ]
+
   const careers = visibleCareers.map((career, index) => {
-    const angle = (angles[index] || -90) * (Math.PI / 180)
-    const distance = ring + (index === 0 ? 14 : 0)
-    const rawX = centerX + Math.cos(angle) * distance
-    const rawY = centerY + Math.sin(angle) * distance
+    const [nx, ny] = normalizedPositions[index] || normalizedPositions[normalizedPositions.length - 1]
+    const p = point(nx, ny, careerRadius)
     return {
       id: career.career_id,
       label: career.title,
       subtitle: `${career.fit_score}% fit`,
-      x: clamp(rawX, pad + careerRadius, size.width - pad - careerRadius),
-      y: clamp(rawY, pad + careerRadius, size.height - pad - careerRadius),
+      x: p.x,
+      y: p.y,
       r: careerRadius,
       career,
       primary: index === 0,
@@ -147,7 +150,7 @@ function drawMap(canvas: HTMLCanvasElement | null, layout: GraphLayout, size: { 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.clearRect(0, 0, size.width, size.height)
 
-  const borderPad = expanded ? 46 : 34
+  const borderPad = expanded ? 54 : 42
   const gridLeft = borderPad
   const gridTop = borderPad
   const gridRight = size.width - borderPad
@@ -222,8 +225,8 @@ function drawMap(canvas: HTMLCanvasElement | null, layout: GraphLayout, size: { 
       ctx.font = "900 11px ui-sans-serif, system-ui, -apple-system, Segoe UI"
       ctx.fillText(node.subtitle, node.x, node.y - 13)
       ctx.fillStyle = "#111827"
-      ctx.font = "900 9px ui-sans-serif, system-ui, -apple-system, Segoe UI"
-      const lines = wrapText(ctx, node.label.toUpperCase(), node.r * 1.45, expanded ? 3 : 2)
+      ctx.font = expanded ? "900 9px ui-sans-serif, system-ui, -apple-system, Segoe UI" : "900 8px ui-sans-serif, system-ui, -apple-system, Segoe UI"
+      const lines = wrapText(ctx, node.label.toUpperCase(), node.r * 1.55, expanded ? 3 : 2)
       const startY = node.y + 7 - ((lines.length - 1) * 10) / 2
       lines.forEach((line, index) => ctx.fillText(line, node.x, startY + index * 10))
     }
@@ -274,7 +277,7 @@ function GraphCanvas({ simulation, expanded = false }: { simulation: Simulation;
       ref={ref}
       className={cn(
         "relative w-full overflow-hidden rounded-[1.75rem] border border-black/80 bg-white",
-        expanded ? "h-[min(76vh,720px)]" : "h-[380px] md:h-[420px]",
+        expanded ? "h-[min(78vh,760px)]" : "h-[360px] md:h-[390px]",
       )}
     >
       <canvas

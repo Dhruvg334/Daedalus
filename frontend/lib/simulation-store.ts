@@ -84,3 +84,30 @@ export function getBookmarks(): Array<{ id: string, name: string }> {
   const raw = localStorage.getItem(BOOKMARKS_KEY);
   return raw ? JSON.parse(raw) : [];
 }
+
+
+export function deleteSimulation(simulationId: string) {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(`${SIM_PREFIX}${simulationId}`);
+  const current = localStorage.getItem(CURRENT_SIM_KEY);
+  if (current === simulationId) {
+    localStorage.removeItem(CURRENT_SIM_KEY);
+  }
+  const recent = getRecentViews().filter(item => item.id !== simulationId);
+  localStorage.setItem(RECENT_VIEWS_KEY, JSON.stringify(recent));
+  const bookmarks = getBookmarks().filter(item => item.id !== simulationId);
+  localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(bookmarks));
+}
+
+export function clearAllSimulations() {
+  if (typeof window === "undefined") return;
+  const keysToDelete: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith(SIM_PREFIX)) keysToDelete.push(key);
+  }
+  keysToDelete.forEach(key => localStorage.removeItem(key));
+  localStorage.removeItem(CURRENT_SIM_KEY);
+  localStorage.removeItem(RECENT_VIEWS_KEY);
+  localStorage.removeItem(BOOKMARKS_KEY);
+}

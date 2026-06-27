@@ -45,6 +45,138 @@ class AIService:
             "status_reason": self.status_reason,
         }
 
+
+    async def generate_career_paths(self, profile: Dict[str, Any], careers: List[Dict[str, Any]], top_n: int = 3) -> List[Dict[str, Any]]:
+        """Ask Gemini to generate or select career paths.
+
+        Returns fully shaped career dictionaries. The simulation service will still
+        validate/rank them and fall back to deterministic paths if Gemini is not
+        configured, times out, or returns invalid JSON.
+        """
+        if not self.model:
+            logger.info("Gemini career generation skipped", extra={"reason": self.status_reason})
+            return []
+
+        compact_candidates = [
+            {
+                "career_id": c.get("career_id"),
+                "title": c.get("title"),
+                "cluster": c.get("cluster"),
+                "summary": c.get("one_line_summary"),
+                "signals": (c.get("related_interests", []) + c.get("related_subjects", []) + c.get("work_styles", []))[:18],
+                "skills": c.get("required_skills", [])[:8],
+            }
+            for c in careers[:70]
+        ]
+        prompt = f"""
+You are the career-recommendation engine inside Daedalus.
+Given the user profile, recommend the best {top_n} career paths.
+
+Rules:
+- Return ONLY valid JSON.
+- Do not force software/AI roles when the profile is clearly music, arts, sports, healthcare, finance, law, or another non-software domain.
+- If an exact matching role exists in the catalog, use its career_id and title.
+- If the catalog is missing a clearly better role, create a new realistic career object.
+- All fit_score values must be 50-97. Do not include anything below 50.
+- Be specific. For example, music + guitar + singer should produce music/performance roles, not generic creator/product roles.
+
+JSON shape:
+{{
+  "career_paths": [
+    {{
+      "career_id": "snake_case_unique_id",
+      "title": "Specific career title",
+      "cluster": "Career cluster",
+      "one_line_summary": "One sentence summary",
+      "mission_statement": "One sentence mission",
+      "fit_score": 50,
+      "ai_exposure_score": 1,
+      "difficulty_score": 1,
+      "growth_potential_score": 1,
+      "related_interests": ["signal"],
+      "related_subjects": ["subject"],
+      "work_styles": ["style"],
+      "required_skills": ["skill1", "skill2", "skill3", "skill4", "skill5", "skill6"],
+      "human_advantage": ["advantage1", "advantage2", "advantage3"],
+      "starter_project": {{
+        "title": "starter project title",
+        "description": "starter project description",
+        "expected_output": "expected output"
+      }}
+    }}
+  ],
+  "reason": "short explanation"
+}}
+
+User profile:
+{json.dumps(profile, ensure_ascii=False)}
+
+Available catalog candidates:
+{json.dumps(compact_candidates, ensure_ascii=False)}
+"""
+        try:
+            logger.info("Gemini career generation started", extra={"candidate_count": len(compact_candidates)})
+            response = await asyncio.wait_for(self.model.generate_content_async(prompt), timeout=18)
+            text = response.text or ""
+            match = re.search(r"\{.*\}", text, re.S)
+            if not match:
+                logger.warning("Gemini career generation returned non-JSON", extra={"text_preview": text[:240]})
+                return []
+            parsed = json.loads(match.group(0))
+            raw_paths = parsed.get("career_paths", [])
+            if not isinstance(raw_paths, list):
+                logger.warning("Gemini career generation JSON missing career_paths")
+                return []
+
+            catalog_by_id = {c.get("career_id"): c for c in careers}
+            valid_paths: List[Dict[str, Any]] = []
+            for item in raw_paths[:top_n]:
+                if not isinstance(item, dict):
+                    continue
+                career_id = str(item.get("career_id") or "").strip()
+                if career_id in catalog_by_id:
+                    base = dict(catalog_by_id[career_id])
+                    base["fit_score"] = int(item.get("fit_score") or base.get("fit_score") or 72)
+                    base["gemini_generated"] = True
+                    valid_paths.append(base)
+                    continue
+
+                title = str(item.get("title") or "").strip()
+                cluster = str(item.get("cluster") or "Career Exploration").strip()
+                skills = item.get("required_skills") if isinstance(item.get("required_skills"), list) else []
+                if not title or len(skills) < 3:
+                    continue
+                cid = re.sub(r"[^a-z0-9]+", "_", (career_id or f"gemini_{title}").lower()).strip("_")
+                starter = item.get("starter_project") if isinstance(item.get("starter_project"), dict) else {}
+                valid_paths.append({
+                    "career_id": cid,
+                    "title": title,
+                    "cluster": cluster,
+                    "one_line_summary": str(item.get("one_line_summary") or f"Explores a practical path in {cluster.lower()}.").strip(),
+                    "mission_statement": str(item.get("mission_statement") or f"Build proof and confidence in {cluster.lower()} through focused practice.").strip(),
+                    "related_interests": [str(x) for x in item.get("related_interests", []) if isinstance(x, (str, int, float))],
+                    "related_subjects": [str(x) for x in item.get("related_subjects", []) if isinstance(x, (str, int, float))],
+                    "work_styles": [str(x) for x in item.get("work_styles", []) if isinstance(x, (str, int, float))],
+                    "required_skills": [str(x) for x in skills][:8],
+                    "ai_exposure_score": int(item.get("ai_exposure_score") or 5),
+                    "difficulty_score": int(item.get("difficulty_score") or 6),
+                    "growth_potential_score": int(item.get("growth_potential_score") or 7),
+                    "human_advantage": [str(x) for x in item.get("human_advantage", []) if isinstance(x, (str, int, float))][:5] or ["taste", "judgment", "communication"],
+                    "starter_project": {
+                        "title": str(starter.get("title") or f"Build a starter project for {title}"),
+                        "description": str(starter.get("description") or "Create one small artifact that proves interest and early ability."),
+                        "expected_output": str(starter.get("expected_output") or "A portfolio-ready artifact with feedback notes."),
+                    },
+                    "fit_score": max(50, min(97, int(item.get("fit_score") or 72))),
+                    "gemini_generated": True,
+                })
+
+            logger.info("Gemini career generation completed", extra={"returned_paths": len(valid_paths), "reason": parsed.get("reason")})
+            return valid_paths
+        except Exception as exc:
+            logger.warning("Gemini career generation failed", extra={"error": str(exc)[:300]})
+            return []
+
     async def rerank_career_ids(self, profile: Dict[str, Any], careers: List[Dict[str, Any]], top_n: int = 3) -> List[str]:
         """Ask Gemini to rerank candidate career IDs. Returns [] on any failure.
 

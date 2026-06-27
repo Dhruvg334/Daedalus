@@ -482,10 +482,219 @@ ALIASES: Dict[str, Set[str]] = {
     "education": {"education", "teaching", "learning", "mentor", "course", "tutor"},
     "security": {"security", "cybersecurity", "hacking", "privacy", "network"},
     "climate": {"climate", "sustainability", "environment", "energy", "green"},
-    "creator": {"creator", "content", "youtube", "music", "film", "social", "storytelling", "writing"},
+    "creator": {"creator", "content", "youtube", "music", "film", "social", "storytelling", "writing", "instagram", "reels", "editing"},
+    "music": {"music", "singing", "singer", "guitar", "guitarist", "piano", "vocals", "vocal", "song", "songs", "songwriting", "dj", "djs", "producer", "artist", "band", "stage", "performance"},
+    "sports": {"sports", "fitness", "athlete", "training", "gym", "coach", "coaching", "nutrition"},
     "robotics": {"robotics", "hardware", "electronics", "iot", "arduino", "sensor", "physics"},
     "policy": {"policy", "law", "ethics", "governance", "government", "debate", "society"},
+
 }
+
+
+def _slug(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
+
+
+def _generated_career(
+    title: str,
+    cluster: str,
+    interests: List[str],
+    subjects: List[str],
+    work_styles: List[str],
+    skills: List[str],
+    summary: str,
+    starter_title: str,
+    ai_exposure: int = 6,
+    difficulty: int = 6,
+    growth: int = 7,
+) -> Dict[str, Any]:
+    career_id = _slug(f"{cluster}_{title}")
+    return {
+        "career_id": career_id,
+        "title": title,
+        "cluster": cluster,
+        "one_line_summary": summary,
+        "mission_statement": f"Build a credible path in {cluster.lower()} through focused practice, feedback, and visible proof of work.",
+        "related_interests": interests,
+        "related_subjects": subjects,
+        "work_styles": work_styles,
+        "required_skills": skills,
+        "ai_exposure_score": ai_exposure,
+        "difficulty_score": difficulty,
+        "growth_potential_score": growth,
+        "human_advantage": ["taste", "judgment", "communication", "trust", "domain intuition"],
+        "starter_project": {
+            "title": starter_title,
+            "description": f"Create one small public artifact that demonstrates interest and early ability in {title.lower()}.",
+            "expected_output": "A portfolio-ready mini-project with a short reflection, feedback notes, and next-step decision.",
+        },
+    }
+
+
+def _generate_broad_career_library() -> List[Dict[str, Any]]:
+    """Create a broad fallback catalog so Daedalus can respond beyond a tiny demo set.
+
+    Gemini can refine the final recommendations when available, but the product must
+    still have enough deterministic coverage for music, arts, finance, science,
+    humanities, trades, sports, and entrepreneurship profiles.
+    """
+    clusters = [
+        ("Music & Performing Arts", ["music", "singing", "guitar", "piano", "performance", "stage", "songwriting", "vocals"], ["music", "english", "performing arts", "media"], ["creative", "performer", "independent", "collaborative"], [
+            ("Singer-Songwriter", "Writes, performs, and releases original music while developing a distinctive artistic identity.", ["vocal training", "songwriting", "stage performance", "music theory", "recording basics", "audience building"], "Record and publish one original song demo", 5, 7, 8),
+            ("Session Guitarist", "Performs guitar parts for live shows, recordings, creators, and bands.", ["guitar technique", "ear training", "music theory", "collaboration", "recording workflow", "live performance"], "Record three guitar covers in different styles", 4, 6, 7),
+            ("Music Producer", "Shapes songs through arrangement, recording, mixing, and digital production tools.", ["DAW basics", "arrangement", "mixing", "sound design", "collaboration", "music business"], "Produce a one-minute track from scratch", 7, 6, 8),
+            ("Live Performer", "Builds a performance career through stage presence, repertoire, and audience connection.", ["stage presence", "repertoire building", "vocal/instrument practice", "audience engagement", "event pitching", "discipline"], "Perform and record a three-song set", 4, 6, 7),
+            ("Artist Manager", "Helps artists plan releases, bookings, positioning, partnerships, and growth.", ["artist positioning", "negotiation", "music marketing", "release planning", "networking", "analytics"], "Build a release plan for an emerging artist", 6, 6, 8),
+        ]),
+        ("Creator Economy", ["content", "youtube", "instagram", "creator", "film", "editing", "storytelling", "social media"], ["english", "media", "art", "business"], ["creative", "independent", "visual", "collaborative"], [
+            ("YouTube Creator", "Builds an audience through video ideas, scripting, filming, editing, and community feedback.", ["scripting", "video editing", "thumbnail design", "audience research", "analytics", "storytelling"], "Publish a 3-video test series", 8, 5, 8),
+            ("Short-Form Video Producer", "Creates high-retention reels, shorts, and TikToks for brands or personal channels.", ["hook writing", "editing", "trend analysis", "visual pacing", "analytics", "brand voice"], "Create five short-form videos around one theme", 8, 5, 7),
+            ("Podcast Producer", "Plans, records, edits, and distributes audio shows with a clear audience promise.", ["research", "audio editing", "interviewing", "story structure", "distribution", "community"], "Record a 10-minute pilot episode", 6, 5, 7),
+            ("Digital Storyteller", "Uses writing, visuals, and media to explain ideas and build audience trust.", ["writing", "visual communication", "research", "editing", "narrative design", "publishing"], "Publish a visual story thread or article", 6, 5, 7),
+            ("Brand Content Strategist", "Plans content systems that connect audience needs with business goals.", ["content strategy", "audience research", "copywriting", "analytics", "campaign planning", "AI tools"], "Create a 2-week content calendar for a real brand", 7, 5, 8),
+        ]),
+        ("Finance & Markets", ["finance", "stocks", "investment", "markets", "trading", "economics", "money", "wealth"], ["economics", "commerce", "accounts", "statistics", "mathematics", "business"], ["analyst", "structured", "research", "decision-making", "leader"], [
+            ("Investment Research Analyst", "Studies companies and markets to form evidence-backed investment views.", ["financial statements", "valuation", "Excel", "market research", "risk analysis", "writing"], "Write a two-page company research note", 6, 7, 8),
+            ("FinTech Founder-Operator", "Builds financial products by combining customer pain, compliance awareness, and technology.", ["customer discovery", "financial basics", "product metrics", "pitching", "risk thinking", "market research"], "Validate one fintech problem with 10 user interviews", 7, 8, 9),
+            ("Personal Finance Educator", "Explains money, budgeting, investing, and financial behavior to an audience.", ["financial literacy", "teaching", "writing", "content creation", "source checking", "audience trust"], "Create a beginner finance explainer series", 5, 5, 8),
+            ("Quantitative Finance Explorer", "Uses math, statistics, and code to test market hypotheses and models.", ["statistics", "Python", "probability", "backtesting", "data cleaning", "risk metrics"], "Backtest a simple investing rule", 8, 8, 8),
+            ("Business Valuation Analyst", "Assesses companies using financial models, industry context, and investment logic.", ["accounting", "valuation", "Excel", "industry analysis", "presentation", "skepticism"], "Build a simple valuation model for one company", 5, 7, 8),
+        ]),
+        ("Entrepreneurship & Product", ["startup", "founder", "business", "entrepreneur", "venture", "innovation", "sales", "product"], ["business", "economics", "computer science", "mathematics", "english"], ["builder", "leader", "operator", "creative", "risk-taking"], [
+            ("Startup Founder", "Finds painful problems, validates demand, and builds early products or services.", ["customer discovery", "selling", "product validation", "pitching", "financial basics", "resilience"], "Validate one startup idea with 10 interviews", 7, 9, 10),
+            ("Product Manager", "Turns user needs, business goals, and technical constraints into product decisions.", ["user research", "prioritization", "product metrics", "communication", "market analysis", "roadmapping"], "Write a product one-pager for a problem", 7, 7, 9),
+            ("Venture Builder", "Creates repeatable processes to test and launch new business ideas.", ["market research", "experimentation", "landing pages", "analytics", "operations", "pitching"], "Launch a one-page demand test", 7, 8, 9),
+            ("Business Development Associate", "Builds partnerships, sales pipelines, and growth opportunities for products.", ["sales writing", "research", "negotiation", "CRM discipline", "presentation", "relationship building"], "Create a 20-lead outreach plan", 5, 5, 8),
+            ("Social Enterprise Founder", "Builds mission-driven products or services that balance impact and sustainability.", ["community research", "impact measurement", "fundraising", "operations", "storytelling", "partnerships"], "Map one community problem and solution pilot", 6, 8, 8),
+        ]),
+        ("Software & AI", ["coding", "software", "ai", "apps", "automation", "developer", "programming", "technology"], ["computer science", "mathematics", "physics"], ["builder", "structured", "problem solving", "independent"], [
+            ("Full-Stack Developer", "Builds web applications across frontend, backend, data, and deployment.", ["JavaScript", "React", "APIs", "databases", "testing", "deployment"], "Ship a small full-stack app", 7, 7, 9),
+            ("AI Application Developer", "Builds practical applications using LLMs, APIs, retrieval, and workflow logic.", ["Python", "LLM APIs", "prompting", "RAG basics", "evaluation", "deployment"], "Build one AI workflow app", 9, 7, 9),
+            ("Automation Engineer", "Connects tools and systems to reduce repetitive manual work.", ["APIs", "workflow design", "Python", "debugging", "logging", "business process"], "Automate a repeated task", 8, 6, 8),
+            ("Game Developer", "Creates interactive games using programming, design, art, and player feedback.", ["game engine basics", "programming", "level design", "visual design", "testing", "storytelling"], "Build a tiny playable game", 6, 7, 8),
+            ("Cloud Developer", "Deploys and operates reliable applications using cloud infrastructure and monitoring.", ["Linux", "Docker", "cloud basics", "APIs", "monitoring", "security basics"], "Deploy a small service with logs", 6, 7, 8),
+        ]),
+        ("Data & Research", ["data", "statistics", "analytics", "research", "math", "science", "experiments"], ["statistics", "mathematics", "economics", "computer science", "psychology"], ["analyst", "research", "structured", "independent"], [
+            ("Data Analyst", "Turns messy data into useful insights, dashboards, and recommendations.", ["Excel", "SQL", "statistics", "dashboarding", "data cleaning", "communication"], "Analyze one public dataset", 6, 6, 8),
+            ("Market Research Analyst", "Studies customers, competitors, and market shifts to support better decisions.", ["survey design", "interviews", "analysis", "writing", "presentation", "source checking"], "Create a competitor research report", 5, 5, 8),
+            ("Behavioral Research Assistant", "Studies human behavior through experiments, interviews, and data interpretation.", ["research methods", "psychology", "statistics", "ethics", "documentation", "analysis"], "Design a small behavior survey", 5, 6, 7),
+            ("Sports Data Analyst", "Uses performance and game data to support coaching, scouting, or fan insights.", ["sports knowledge", "statistics", "data visualization", "Excel/Python", "storytelling", "domain judgment"], "Analyze one team's performance data", 6, 6, 7),
+            ("Policy Research Analyst", "Uses evidence and writing to support public policy or institutional decisions.", ["policy reading", "writing", "data literacy", "stakeholder analysis", "ethics", "presentation"], "Write a short policy brief", 5, 6, 8),
+        ]),
+        ("Healthcare & Life Sciences", ["biology", "healthcare", "medicine", "doctor", "health", "chemistry", "patients", "research"], ["biology", "chemistry", "psychology", "statistics"], ["helper", "research", "structured", "collaborative"], [
+            ("Clinical Research Coordinator", "Supports studies that test health interventions and collect reliable clinical data.", ["research ethics", "biology", "documentation", "communication", "data accuracy", "protocols"], "Summarize one clinical study in plain language", 5, 7, 8),
+            ("Health Communication Specialist", "Explains health topics clearly and responsibly for public audiences.", ["health literacy", "writing", "source checking", "visual communication", "empathy", "education"], "Create a health myth-busting explainer", 5, 5, 8),
+            ("Biotech Product Analyst", "Connects life science problems with product, market, and technology decisions.", ["biology fundamentals", "market research", "product thinking", "data literacy", "ethics", "presentation"], "Analyze one biotech product category", 6, 7, 8),
+            ("Mental Health Program Designer", "Designs structured wellbeing programs and support resources with care boundaries.", ["psychology basics", "program design", "communication", "ethics", "evaluation", "resource mapping"], "Design a school wellbeing resource map", 5, 6, 8),
+            ("Public Health Data Analyst", "Uses data to understand health patterns and improve public health decisions.", ["statistics", "public health basics", "dashboarding", "data cleaning", "communication", "ethics"], "Visualize a public health dataset", 6, 7, 8),
+        ]),
+        ("Engineering & Robotics", ["robotics", "hardware", "electronics", "engineering", "iot", "machines", "physics", "building"], ["physics", "mathematics", "electronics", "computer science"], ["hands-on", "builder", "structured", "problem solving"], [
+            ("Robotics Engineer", "Builds intelligent physical systems using mechanics, electronics, code, and sensors.", ["mechanics", "electronics", "Python/C++", "sensors", "control systems", "debugging"], "Build a simple sensor-controlled prototype", 6, 8, 8),
+            ("IoT Product Builder", "Creates connected devices and dashboards for real-world monitoring or automation.", ["sensors", "microcontrollers", "APIs", "dashboarding", "electronics", "testing"], "Build a sensor-to-dashboard demo", 7, 7, 8),
+            ("Mechanical Design Engineer", "Designs, tests, and improves physical components and systems.", ["CAD", "physics", "materials", "testing", "documentation", "problem solving"], "Model and explain one mechanical mechanism", 4, 7, 8),
+            ("Automotive Systems Engineer", "Works on vehicle systems, diagnostics, efficiency, or mobility technologies.", ["mechanical basics", "electronics", "data analysis", "systems thinking", "safety", "testing"], "Analyze one vehicle subsystem", 5, 7, 8),
+            ("Drone Systems Builder", "Builds and tests drone systems involving flight, sensors, control, and safety.", ["aerodynamics basics", "electronics", "control systems", "sensors", "safety", "debugging"], "Design a drone mission plan and subsystem map", 6, 8, 8),
+        ]),
+        ("Law, Policy & Society", ["law", "policy", "ethics", "debate", "society", "government", "justice", "writing"], ["political science", "history", "english", "economics", "law"], ["research", "writing", "analyst", "collaborative"], [
+            ("Legal Researcher", "Studies laws, cases, and arguments to support legal reasoning and decisions.", ["legal reading", "writing", "argumentation", "research", "citation", "ethics"], "Write a case-summary brief", 4, 7, 7),
+            ("AI Governance Analyst", "Helps organizations use AI responsibly through policies, risk checks, and accountability.", ["AI literacy", "policy research", "risk analysis", "writing", "stakeholder communication", "ethics"], "Draft an AI-use policy for a school club", 6, 6, 8),
+            ("Public Policy Analyst", "Uses evidence, writing, and stakeholder understanding to improve institutional decisions.", ["policy analysis", "data literacy", "writing", "economics", "stakeholder mapping", "presentation"], "Write a two-page policy memo", 5, 6, 8),
+            ("Journalist", "Investigates, verifies, and explains public-interest stories.", ["reporting", "interviewing", "writing", "fact-checking", "ethics", "audience trust"], "Report one local issue with three sources", 5, 6, 7),
+            ("Diplomacy & International Relations Analyst", "Studies global issues, negotiation, policy, and cross-cultural strategy.", ["history", "political analysis", "writing", "languages", "negotiation", "research"], "Write a country-risk briefing", 5, 7, 7),
+        ]),
+        ("Education & Community", ["teaching", "education", "community", "mentoring", "children", "learning", "training"], ["english", "psychology", "education", "social science"], ["helper", "collaborative", "creative", "structured"], [
+            ("Teacher", "Designs learning experiences, explains concepts, and supports student growth.", ["subject mastery", "lesson planning", "communication", "assessment", "patience", "feedback"], "Teach one concept and collect feedback", 4, 6, 7),
+            ("Learning Experience Designer", "Creates courses, learning products, and interactive study systems.", ["instructional design", "writing", "assessment design", "UX basics", "AI tutoring tools", "feedback loops"], "Build a 20-minute mini-course", 6, 5, 8),
+            ("Community Program Manager", "Runs programs that coordinate people, resources, events, and outcomes.", ["planning", "communication", "operations", "partnerships", "impact tracking", "facilitation"], "Plan a small community workshop", 5, 5, 8),
+            ("Career Counselor", "Helps people understand options, constraints, strengths, and next steps.", ["listening", "career research", "coaching", "ethics", "resource mapping", "documentation"], "Create a mini career resource guide", 5, 6, 7),
+            ("NGO Operations Coordinator", "Supports nonprofit projects, volunteers, reporting, and field coordination.", ["project coordination", "communication", "reporting", "volunteer management", "data collection", "empathy"], "Design a volunteer tracking sheet", 5, 5, 7),
+        ]),
+        ("Environment & Sustainability", ["climate", "environment", "sustainability", "green", "energy", "nature", "water"], ["environmental science", "geography", "biology", "statistics", "economics"], ["research", "helper", "analyst", "structured"], [
+            ("Sustainability Analyst", "Measures environmental impact and recommends operational improvements.", ["sustainability basics", "data analysis", "reporting", "carbon literacy", "communication", "Excel"], "Analyze one household or campus footprint", 5, 6, 8),
+            ("Renewable Energy Project Analyst", "Studies solar, wind, storage, and economics for clean energy projects.", ["energy basics", "Excel", "economics", "project analysis", "policy awareness", "data visualization"], "Compare two solar project scenarios", 5, 7, 8),
+            ("Urban Planner", "Designs better cities through mobility, housing, environment, and public-space decisions.", ["geography", "policy", "design thinking", "data literacy", "community research", "presentation"], "Map one local urban problem", 5, 7, 7),
+            ("Wildlife Conservation Communicator", "Uses science and storytelling to support biodiversity awareness and action.", ["biology", "storytelling", "field observation", "photography", "source checking", "community engagement"], "Create a local biodiversity field note", 4, 5, 7),
+            ("Climate Policy Researcher", "Studies climate rules, incentives, and implementation tradeoffs.", ["policy research", "climate basics", "economics", "writing", "data literacy", "stakeholder analysis"], "Write a climate policy explainer", 5, 6, 8),
+        ]),
+        ("Sports, Fitness & Wellness", ["sports", "fitness", "athlete", "gym", "training", "nutrition", "coaching"], ["physical education", "biology", "psychology", "statistics"], ["hands-on", "helper", "competitive", "structured"], [
+            ("Sports Coach", "Develops athletes through practice design, feedback, motivation, and performance tracking.", ["sport fundamentals", "coaching", "communication", "practice planning", "feedback", "safety"], "Design a 2-week training plan", 4, 6, 7),
+            ("Fitness Trainer", "Helps clients improve fitness through safe training plans and habit support.", ["exercise basics", "communication", "programming", "nutrition literacy", "safety", "motivation"], "Create a beginner fitness plan", 4, 5, 7),
+            ("Sports Media Analyst", "Explains sports through data, commentary, storytelling, and audience insight.", ["sports knowledge", "writing", "data literacy", "video/audio", "analysis", "presentation"], "Make a match analysis video/script", 6, 5, 7),
+            ("Nutrition Educator", "Explains food, health habits, and evidence-aware nutrition basics.", ["nutrition literacy", "biology", "communication", "source checking", "empathy", "habit design"], "Create a nutrition myth explainer", 5, 6, 7),
+            ("Sports Event Manager", "Plans sports events through logistics, sponsorship, teams, and operations.", ["event planning", "operations", "communication", "sponsorship", "coordination", "problem solving"], "Plan a small sports tournament", 5, 5, 7),
+        ]),
+        ("Visual Arts & Design", ["art", "drawing", "painting", "illustration", "design", "fashion", "photography", "animation"], ["art", "design", "english", "media"], ["creative", "visual", "independent", "collaborative"], [
+            ("Illustrator", "Creates visual artwork for stories, brands, books, games, and digital products.", ["drawing", "composition", "visual storytelling", "portfolio building", "client communication", "digital tools"], "Create a 5-piece illustration mini-series", 5, 6, 7),
+            ("Photographer", "Uses composition, lighting, editing, and storytelling to create visual records and campaigns.", ["composition", "lighting", "editing", "client briefs", "visual storytelling", "portfolio"], "Shoot and edit one themed photo essay", 5, 5, 7),
+            ("Fashion Designer", "Creates apparel concepts by combining aesthetics, materials, culture, and market insight.", ["sketching", "textile basics", "trend research", "pattern basics", "branding", "presentation"], "Design a mini fashion capsule concept", 5, 7, 8),
+            ("Animator", "Creates motion-based visual stories for media, education, games, and products.", ["storyboarding", "animation tools", "timing", "character design", "editing", "feedback"], "Animate a 15-second sequence", 6, 7, 8),
+            ("Interior Experience Designer", "Designs spaces that balance aesthetics, function, mood, and user behavior.", ["space planning", "moodboards", "materials", "client research", "visual presentation", "budgeting"], "Redesign one room as a concept board", 4, 6, 7),
+        ]),
+        ("Media & Entertainment", ["film", "acting", "cinema", "media", "theatre", "entertainment", "script", "dance"], ["media", "english", "performing arts", "psychology"], ["creative", "performer", "collaborative", "visual"], [
+            ("Actor", "Builds character, voice, movement, and performance range for screen or stage.", ["acting technique", "voice", "movement", "audition prep", "script analysis", "discipline"], "Record two contrasting monologues", 4, 7, 7),
+            ("Film Director", "Shapes stories through vision, performance, camera language, editing, and team leadership.", ["storytelling", "shot planning", "team direction", "editing literacy", "visual taste", "production planning"], "Shoot a one-minute short film", 6, 8, 8),
+            ("Screenwriter", "Writes scripts with structure, character, dialogue, and market awareness.", ["story structure", "dialogue", "character design", "drafting", "feedback", "pitching"], "Write a 5-page short film script", 6, 6, 7),
+            ("Dance Performer", "Builds technical skill, expression, stage presence, and repertoire.", ["technique", "routine design", "performance", "discipline", "audience engagement", "collaboration"], "Record a polished 90-second routine", 4, 7, 7),
+            ("Entertainment Event Producer", "Plans live experiences through talent, logistics, stage flow, and audience design.", ["event planning", "budgeting", "vendor coordination", "programming", "communication", "crisis handling"], "Plan a small live showcase", 5, 6, 8),
+        ]),
+        ("Architecture & Built Environment", ["architecture", "buildings", "design", "cities", "space", "construction", "urban"], ["mathematics", "physics", "art", "geography"], ["visual", "structured", "builder", "creative"], [
+            ("Architect", "Designs buildings by balancing function, context, structure, and human experience.", ["spatial design", "drawing", "modeling", "building basics", "client research", "presentation"], "Design a small study-space concept", 5, 8, 8),
+            ("Urban Mobility Planner", "Improves transport and city movement using data, design, and policy thinking.", ["mapping", "transport basics", "data literacy", "policy", "community research", "presentation"], "Map a local mobility problem", 5, 7, 7),
+            ("Landscape Designer", "Designs outdoor spaces through ecology, aesthetics, materials, and user needs.", ["plant basics", "site analysis", "sketching", "materials", "sustainability", "client communication"], "Create a small garden redesign", 4, 6, 7),
+            ("Construction Project Coordinator", "Coordinates timelines, people, material, safety, and execution on built projects.", ["planning", "site basics", "communication", "safety", "documentation", "problem solving"], "Create a project execution checklist", 4, 6, 8),
+            ("Set Designer", "Creates physical worlds for theatre, film, events, or content production.", ["visual design", "materials", "story interpretation", "budgeting", "collaboration", "sketching"], "Design a set concept for a scene", 5, 6, 7),
+        ]),
+        ("Hospitality, Travel & Culinary", ["food", "cooking", "travel", "hotel", "hospitality", "tourism", "restaurant", "baking"], ["home science", "business", "geography", "english"], ["hands-on", "service", "creative", "collaborative"], [
+            ("Chef", "Creates food experiences through technique, taste, operations, and consistency.", ["cooking technique", "menu planning", "hygiene", "taste development", "operations", "costing"], "Design and cook a 3-dish menu", 4, 7, 8),
+            ("Food Content Creator", "Explains food, recipes, culture, and taste through digital media.", ["recipe testing", "video editing", "storytelling", "photography", "audience research", "source checking"], "Create a 3-recipe content series", 7, 5, 8),
+            ("Hotel Experience Manager", "Improves guest experience through service design, operations, and feedback loops.", ["service design", "communication", "operations", "feedback analysis", "teamwork", "problem solving"], "Map one guest experience journey", 5, 6, 8),
+            ("Travel Planner", "Designs useful itineraries based on constraints, budgets, interests, and local context.", ["research", "budgeting", "geography", "customer understanding", "planning", "communication"], "Create a 3-day itinerary with tradeoffs", 5, 5, 7),
+            ("Restaurant Entrepreneur", "Builds food businesses through menu, operations, positioning, cost, and customer demand.", ["food costing", "customer research", "operations", "branding", "sales", "quality control"], "Validate one food-business concept", 5, 8, 9),
+        ]),
+        ("Trades, Operations & Public Services", ["operations", "logistics", "police", "army", "public service", "management", "safety", "transport"], ["business", "physical education", "civics", "mathematics"], ["structured", "hands-on", "leader", "service"], [
+            ("Operations Manager", "Improves daily execution through planning, measurement, systems, and team coordination.", ["process mapping", "communication", "metrics", "coordination", "problem solving", "documentation"], "Map and improve one daily process", 5, 6, 8),
+            ("Logistics Coordinator", "Moves goods and services reliably by planning routes, inventory, vendors, and timelines.", ["planning", "Excel", "communication", "vendor coordination", "problem solving", "tracking"], "Design a delivery route plan", 5, 5, 8),
+            ("Public Service Officer", "Supports society through administration, public problem solving, and accountable decisions.", ["civics", "writing", "policy basics", "communication", "ethics", "decision-making"], "Write a local public-service improvement note", 4, 7, 8),
+            ("Emergency Response Coordinator", "Plans and coordinates response under pressure across people, logistics, and safety.", ["crisis planning", "communication", "first-aid literacy", "coordination", "calm judgment", "documentation"], "Build an emergency response checklist", 4, 7, 8),
+            ("Retail Business Operator", "Runs retail execution through customer experience, inventory, sales, and local demand.", ["sales", "inventory", "customer service", "visual merchandising", "cashflow basics", "operations"], "Analyze one local store experience", 4, 5, 8),
+        ]),
+        ("Psychology & Human Services", ["psychology", "people", "helping", "counselling", "social", "behavior", "therapy"], ["psychology", "biology", "english", "social science"], ["helper", "research", "collaborative", "empathetic"], [
+            ("Counselling Psychologist", "Supports people through listening, assessment, ethical care, and evidence-informed intervention.", ["psychology basics", "listening", "ethics", "documentation", "research literacy", "boundaries"], "Create a mental wellbeing resource guide", 4, 9, 8),
+            ("User Researcher", "Studies user behavior to help teams build better products and services.", ["interviewing", "synthesis", "psychology", "note-taking", "presentation", "research ethics"], "Run 5 user interviews on one product", 5, 6, 8),
+            ("HR Talent Partner", "Helps organizations hire, support, and develop people responsibly.", ["communication", "interviewing", "people analytics", "policy", "empathy", "documentation"], "Design an internship hiring rubric", 5, 5, 8),
+            ("Social Worker", "Connects people with support systems while managing sensitive human situations.", ["empathy", "case notes", "resource mapping", "communication", "ethics", "field coordination"], "Map local support resources for one issue", 4, 7, 8),
+            ("Behavioral Design Consultant", "Uses behavioral science to improve decisions, habits, products, or public programs.", ["behavioral science", "experiment design", "writing", "data literacy", "ethics", "presentation"], "Design one behavior-change experiment", 6, 7, 8),
+        ]),
+        ("Agriculture, Food Systems & Animals", ["animals", "farming", "agriculture", "food", "nature", "veterinary", "plants"], ["biology", "environmental science", "chemistry", "geography"], ["hands-on", "helper", "research", "structured"], [
+            ("Veterinary Assistant", "Supports animal care through observation, handling, communication, and medical support tasks.", ["animal care", "biology", "observation", "communication", "hygiene", "documentation"], "Create an animal-care observation journal", 4, 7, 7),
+            ("Agritech Product Builder", "Solves farming and food-system problems through technology, data, and field insight.", ["field research", "agriculture basics", "data literacy", "product thinking", "communication", "operations"], "Map one farming pain point and solution", 6, 7, 8),
+            ("Food Safety Analyst", "Monitors food quality, safety, hygiene, and compliance.", ["microbiology basics", "documentation", "quality checks", "hygiene", "process thinking", "communication"], "Build a food safety checklist", 4, 6, 8),
+            ("Plant Science Researcher", "Studies crops, plants, soil, and growth conditions for better food and environment outcomes.", ["botany", "experiment design", "data recording", "chemistry", "observation", "research writing"], "Run a small plant-growth experiment", 4, 7, 7),
+            ("Sustainable Farming Entrepreneur", "Builds local food ventures using sustainability, operations, and market demand.", ["sustainability", "farm operations", "customer research", "costing", "storytelling", "quality control"], "Validate one sustainable food product idea", 5, 8, 8),
+        ]),
+        ("Aerospace, Aviation & Space", ["space", "aerospace", "aviation", "aircraft", "planes", "astronomy", "rockets"], ["physics", "mathematics", "computer science", "geography"], ["structured", "builder", "research", "problem solving"], [
+            ("Aerospace Engineer", "Works on flight systems, aerodynamics, structures, or propulsion problems.", ["physics", "mathematics", "CAD", "simulation", "systems thinking", "testing"], "Analyze one aircraft or rocket subsystem", 5, 9, 8),
+            ("Pilot Pathway Explorer", "Builds the academic, medical, training, and discipline foundation for aviation careers.", ["navigation basics", "discipline", "communication", "weather literacy", "safety", "decision-making"], "Map a pilot training pathway and requirements", 4, 8, 7),
+            ("Space Data Analyst", "Uses satellite, astronomy, or space-mission data for research and decisions.", ["Python", "data analysis", "physics", "visualization", "research", "source checking"], "Analyze one public space dataset", 6, 7, 8),
+            ("Drone Operations Specialist", "Plans drone missions for mapping, inspection, media, or agriculture.", ["drone safety", "mapping", "regulations", "mission planning", "sensor basics", "reporting"], "Design one drone mission plan", 5, 6, 8),
+            ("Astronomy Communicator", "Explains space science through writing, visuals, teaching, or media.", ["astronomy basics", "writing", "visual explanation", "source checking", "storytelling", "public speaking"], "Create a space explainer for beginners", 5, 5, 7),
+        ]),
+    ]
+
+    careers: List[Dict[str, Any]] = []
+    for cluster, interests, subjects, styles, roles in clusters:
+        for title, summary, skills, starter, ai, diff, growth in roles:
+            careers.append(_generated_career(title, cluster, interests, subjects, styles, skills, summary, starter, ai, diff, growth))
+    return careers
+
+
+_existing_ids = {career["career_id"] for career in CAREER_LIBRARY}
+for _career in _generate_broad_career_library():
+    if _career["career_id"] not in _existing_ids:
+        CAREER_LIBRARY.append(_career)
+        _existing_ids.add(_career["career_id"])
+
+logger.info("Daedalus career library initialized", extra={"career_count": len(CAREER_LIBRARY)})
 
 
 class SimulationService:
@@ -510,26 +719,41 @@ class SimulationService:
         rank_start = time.time()
         ranked_results = self._rank_careers_with_logic(profile)
         deterministic_top = [r["career"]["career_id"] for r in ranked_results[:top_n]]
-        ai_status = {"used": False, "reason": "not_configured_or_unavailable", "selected_ids": []}
+        ai_status = {"used": False, "reason": "not_configured_or_unavailable", "selected_ids": [], "generated_titles": []}
         try:
             from .ai_service import AIService
 
             ai_service = AIService()
-            ai_ids = await ai_service.rerank_career_ids(profile, [r["career"] for r in ranked_results[:10]], top_n=top_n)
-            if ai_ids:
-                by_id = {item["career"]["career_id"]: item for item in ranked_results}
-                selected = [by_id[cid] for cid in ai_ids if cid in by_id]
-                for item in ranked_results:
-                    if item not in selected:
-                        selected.append(item)
-                ranked_results = selected
-                ai_status = {"used": True, "reason": "gemini_rerank", "selected_ids": ai_ids}
+            candidate_pool = [r["career"] for r in ranked_results[:60]]
+            ai_careers = await ai_service.generate_career_paths(profile, candidate_pool, top_n=top_n)
+            if ai_careers:
+                ai_ranked = self._rank_careers_with_logic(profile, career_library=ai_careers)
+                ai_ids = [item["career"]["career_id"] for item in ai_ranked]
+                used_ids = set(ai_ids)
+                remainder = [item for item in ranked_results if item["career"]["career_id"] not in used_ids]
+                ranked_results = ai_ranked + remainder
+                ai_status = {
+                    "used": True,
+                    "reason": "gemini_generated_or_selected_paths",
+                    "selected_ids": ai_ids[:top_n],
+                    "generated_titles": [item["career"].get("title") for item in ai_ranked[:top_n]],
+                }
         except Exception as exc:
-            logger.warning("Gemini simulation rerank unavailable; deterministic ranking used", extra={"error": str(exc)})
-            ai_status = {"used": False, "reason": str(exc)[:160], "selected_ids": []}
+            logger.warning("Gemini simulation generation unavailable; deterministic ranking used", extra={"error": str(exc)})
+            ai_status = {"used": False, "reason": str(exc)[:160], "selected_ids": [], "generated_titles": []}
+
+        qualified_results = [item for item in ranked_results if int(item["fit_score"]) >= 50]
+        if not qualified_results:
+            logger.info("No career paths crossed display threshold; showing best available path at the minimum display threshold", extra={"top_score": ranked_results[0]["fit_score"] if ranked_results else None})
+            qualified_results = ranked_results[:1]
+            if qualified_results:
+                qualified_results[0] = dict(qualified_results[0])
+                qualified_results[0]["fit_score"] = 50
         rank_end = time.time()
 
-        career_paths = [self._build_career_path(profile, item["career"], index, item) for index, item in enumerate(ranked_results[:top_n])]
+        career_paths = [self._build_career_path(profile, item["career"], index, item) for index, item in enumerate(qualified_results[:top_n])]
+        if not career_paths:
+            raise RuntimeError("No career paths could be generated from the current profile.")
         recommended = career_paths[0]
         simulation_id = f"sim_{uuid.uuid4().hex[:12]}"
 
@@ -570,7 +794,7 @@ class SimulationService:
                         "step_id": "profile_normalization",
                         "status": "completed",
                         "summary": "Normalized interests, subjects, skills, goals, fears, and free-text profile notes.",
-                        "detail": {"input_signals": len(self._profile_tokens(profile)), "career_library_size": len(CAREER_LIBRARY)},
+                        "detail": {"input_signals": len(self._profile_tokens(profile)), "career_library_size": len(CAREER_LIBRARY), "display_threshold": 50},
                     },
                     {
                         "step_id": "career_ranking",
@@ -599,7 +823,7 @@ class SimulationService:
                 ],
                 "warnings": [
                     "Career recommendations are directional and meant for exploration, not final life decisions.",
-                    "Gemini is used for simulation reranking when configured; deterministic ranking remains the fallback for reliability.",
+                    "Gemini is used for career-path generation when configured; deterministic ranking remains the fallback for reliability.",
                 ],
             },
         }
@@ -644,13 +868,14 @@ class SimulationService:
             "risk_heatmap": self._generate_risk_heatmap(career),
         }
 
-    def _rank_careers_with_logic(self, profile: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _rank_careers_with_logic(self, profile: Dict[str, Any], career_library: List[Dict[str, Any]] | None = None) -> List[Dict[str, Any]]:
         profile_tokens = self._profile_tokens(profile)
+        library = career_library or CAREER_LIBRARY
         dream_tokens = self._tokens_from(profile.get("dream_careers", [])) | self._tokens_from([profile.get("optional_profile_text") or ""])
         disliked_tokens = self._tokens_from(profile.get("disliked_careers", []))
         results = []
 
-        for career in CAREER_LIBRARY:
+        for career in library:
             interest_tokens = self._expand_tokens(self._tokens_from(career["related_interests"]))
             subject_tokens = self._expand_tokens(self._tokens_from(career["related_subjects"]))
             skill_tokens = self._expand_tokens(self._tokens_from(career["required_skills"]))
@@ -666,18 +891,19 @@ class SimulationService:
             dislike_penalty = min(14, len(disliked_tokens & career_tokens) * 5)
 
             weighted = (
-                34 * interest_match
-                + 18 * subject_match
-                + 18 * skill_match
+                32 * interest_match
+                + 16 * subject_match
+                + 16 * skill_match
                 + 12 * style_match
-                + 12 * dream_match
+                + 18 * dream_match
                 + 6 * broad_match
             )
-            # Keep the score responsive instead of saturating every decent match at 98.
-            # Strong profile-career matches now land in the 82-96 range; weak matches stay lower.
-            score = int(round(38 + (weighted * 0.58) - dislike_penalty))
-            score = max(36, min(96, score))
             matched_signals = sorted(profile_tokens & career_tokens)
+            signal_bonus = min(10, len(matched_signals) * 1.4)
+            score = int(round(30 + (weighted * 0.62) + signal_bonus - dislike_penalty))
+            if career.get("gemini_generated"):
+                score = max(score, int(career.get("fit_score", 72)))
+            score = max(28, min(97, score))
             results.append(
                 {
                     "career": career,
