@@ -17,12 +17,16 @@ type GraphPoint = {
   y: number
 }
 
+const WIDTH = 1000
+const HEIGHT = 430
+const CENTER: GraphPoint = { x: 500, y: 215 }
+
 const NODE_POSITIONS: GraphPoint[] = [
-  { x: 50, y: 21 },
-  { x: 27, y: 68 },
-  { x: 73, y: 68 },
-  { x: 18, y: 42 },
-  { x: 82, y: 42 },
+  { x: 500, y: 92 },
+  { x: 330, y: 300 },
+  { x: 670, y: 300 },
+  { x: 220, y: 190 },
+  { x: 780, y: 190 },
 ]
 
 export function CareerGraph({ simulation, className }: CareerGraphProps) {
@@ -30,95 +34,116 @@ export function CareerGraph({ simulation, className }: CareerGraphProps) {
   const router = useRouter()
   const simId = simulation.simulation_id
 
+  const openCareer = (careerId: string) => {
+    router.push(`/career/${simId}/${careerId}`)
+  }
+
   return (
-    <div className={cn("relative w-full min-h-[380px] md:min-h-[430px] bg-white rounded-[2rem] overflow-hidden border border-black/80", className)}>
-      <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <div className={cn("relative w-full overflow-hidden rounded-[2rem] border border-black/80 bg-white", className)}>
+      <svg
+        className="block h-auto w-full"
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        role="img"
+        aria-label="Interactive career map"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <defs>
+          <filter id="daedalus-node-shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="6" stdDeviation="8" floodOpacity="0.10" />
+          </filter>
+        </defs>
+
+        <motion.g
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <text x="154" y="103" className="fill-black/25 text-[11px] font-black uppercase tracking-wider">
+            Neural_Match
+          </text>
+          <foreignObject x="132" y="88" width="18" height="18" className="text-black/25">
+            <Brain className="h-4 w-4" />
+          </foreignObject>
+          <text x="850" y="284" className="fill-black/25 text-[11px] font-black uppercase tracking-wider">
+            Vector_Cache
+          </text>
+          <foreignObject x="828" y="269" width="18" height="18" className="text-black/25">
+            <Database className="h-4 w-4" />
+          </foreignObject>
+        </motion.g>
+
         {paths.map((path, idx) => {
           const point = NODE_POSITIONS[idx] ?? NODE_POSITIONS[NODE_POSITIONS.length - 1]
           return (
             <motion.line
-              key={path.career_id}
+              key={`line-${path.career_id}`}
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ duration: 0.9, delay: 0.2 + idx * 0.12 }}
-              x1="50"
-              y1="50"
+              transition={{ duration: 0.85, delay: 0.15 + idx * 0.1 }}
+              x1={CENTER.x}
+              y1={CENTER.y}
               x2={point.x}
               y2={point.y}
               stroke="currentColor"
-              strokeWidth="0.45"
-              vectorEffect="non-scaling-stroke"
+              strokeWidth="2.2"
+              strokeLinecap="round"
               className="text-black/80"
+              vectorEffect="non-scaling-stroke"
             />
           )
         })}
+
+        <motion.g
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 180, damping: 18 }}
+          transform={`translate(${CENTER.x} ${CENTER.y})`}
+        >
+          <circle r="46" className="fill-white stroke-black" strokeWidth="5" filter="url(#daedalus-node-shadow)" />
+          <foreignObject x="-10" y="-22" width="20" height="20" className="text-black">
+            <User className="h-5 w-5" />
+          </foreignObject>
+          <text x="0" y="20" textAnchor="middle" className="fill-black text-[11px] font-black uppercase tracking-tight">
+            Subject
+          </text>
+        </motion.g>
+
+        {paths.map((path, idx) => {
+          const point = NODE_POSITIONS[idx] ?? NODE_POSITIONS[NODE_POSITIONS.length - 1]
+          const isPrimary = idx === 0
+          return (
+            <motion.g
+              key={path.career_id}
+              role="button"
+              tabIndex={0}
+              aria-label={`Open ${path.title} analysis`}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ delay: 0.3 + idx * 0.1, type: "spring", stiffness: 180, damping: 16 }}
+              transform={`translate(${point.x} ${point.y})`}
+              onClick={() => openCareer(path.career_id)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") openCareer(path.career_id)
+              }}
+              className="cursor-pointer outline-none"
+            >
+              <rect x="-34" y="-34" width="68" height="68" rx="18" className="fill-white stroke-black transition-colors hover:stroke-[#1e6a8a]" strokeWidth="1.5" filter="url(#daedalus-node-shadow)" />
+              <foreignObject x="-14" y="-14" width="28" height="28" className={isPrimary ? "text-amber-500" : "text-black"}>
+                {isPrimary ? <Zap className="h-7 w-7" /> : <Target className="h-7 w-7" />}
+              </foreignObject>
+              <title>{path.title}</title>
+            </motion.g>
+          )
+        })}
+
+        <text x="40" y="365" className="fill-black text-[14px] font-black uppercase tracking-[0.35em]">
+          Signal_Graph // 0x42
+        </text>
+        <text x="40" y="391" className="fill-black/65 text-[13px]">
+          Visualizing path centroids and identity vectors
+        </text>
       </svg>
-
-      <FloatingNode icon={Brain} delay={0.2} x="15%" y="21%" label="Neural_Match" />
-      <FloatingNode icon={Database} delay={0.6} x="84%" y="69%" label="Vector_Cache" />
-
-      <motion.div
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 180, damping: 18 }}
-        className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2"
-      >
-        <div className="flex h-20 w-20 flex-col items-center justify-center rounded-full border-[5px] border-black bg-white shadow-sm">
-          <User className="h-5 w-5 text-black" />
-          <span className="mt-1 text-[9px] font-black uppercase tracking-tighter text-black">Subject</span>
-        </div>
-      </motion.div>
-
-      {paths.map((path, idx) => {
-        const point = NODE_POSITIONS[idx] ?? NODE_POSITIONS[NODE_POSITIONS.length - 1]
-        return (
-          <motion.button
-            key={path.career_id}
-            type="button"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            whileHover={{ scale: 1.06 }}
-            transition={{ delay: 0.35 + idx * 0.12, type: "spring", stiffness: 180, damping: 16 }}
-            onClick={() => router.push(`/career/${simId}/${path.career_id}`)}
-            className="group absolute z-10 -translate-x-1/2 -translate-y-1/2 outline-none"
-            style={{ left: `${point.x}%`, top: `${point.y}%` }}
-            aria-label={`Open ${path.title} analysis`}
-          >
-            <span className="flex h-16 w-16 items-center justify-center rounded-2xl border border-black bg-white shadow-sm transition-all group-hover:border-[#1e6a8a] group-hover:shadow-md">
-              {idx === 0 ? (
-                <Zap className="h-7 w-7 text-amber-500" />
-              ) : (
-                <Target className="h-7 w-7 text-black transition-colors group-hover:text-[#1e6a8a]" />
-              )}
-            </span>
-            <span className="pointer-events-none absolute left-1/2 top-full mt-2 max-w-[180px] -translate-x-1/2 rounded-lg bg-black px-2 py-1 text-[10px] font-bold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-              {path.title}
-            </span>
-          </motion.button>
-        )
-      })}
-
-      <div className="absolute bottom-7 left-8">
-        <h4 className="mb-1 text-[11px] font-black uppercase tracking-[0.3em] text-black">Signal_Graph // 0x42</h4>
-        <p className="text-[10px] text-black/65">Visualizing path centroids and identity vectors</p>
-      </div>
     </div>
-  )
-}
-
-function FloatingNode({ icon: Icon, delay, x, y, label }: { icon: React.ElementType; delay: number; x: string; y: string; label: string }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: [0.12, 0.34, 0.18] }}
-      transition={{ duration: 4.5, repeat: Infinity, delay }}
-      className="absolute z-0 pointer-events-none -translate-x-1/2 -translate-y-1/2"
-      style={{ left: x, top: y }}
-    >
-      <div className="flex items-center gap-2 text-black/35">
-        <Icon className="h-3.5 w-3.5" />
-        <span className="text-[8px] font-mono font-black uppercase">{label}</span>
-      </div>
-    </motion.div>
   )
 }
