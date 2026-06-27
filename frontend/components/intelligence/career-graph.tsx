@@ -1,8 +1,7 @@
 "use client"
 
 import React, { useEffect, useMemo, useRef, useState } from "react"
-import { motion } from "framer-motion"
-import { Brain, Database, Maximize2, Minimize2, Target, User, Zap } from "lucide-react"
+import { Maximize2, Minimize2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { cn } from "@/lib/utils"
@@ -13,74 +12,29 @@ interface CareerGraphProps {
   className?: string
 }
 
-type NodeKind = "subject" | "career"
-
-type GraphNode = {
+type DrawNode = {
   id: string
   label: string
-  subLabel?: string
-  kind: NodeKind
+  subtitle: string
   x: number
   y: number
-  path?: CareerPath
+  radius: number
+  career?: CareerPath
   primary?: boolean
 }
 
-type GraphLayout = {
-  nodes: GraphNode[]
-  links: Array<{ from: GraphNode; to: GraphNode }>
+type DrawLayout = {
+  subject: DrawNode
+  careers: DrawNode[]
 }
 
-const BASE_WIDTH = 1000
-const BASE_HEIGHT = 460
-const CENTER = { x: BASE_WIDTH / 2, y: 235 }
+const DESIGN_WIDTH = 1200
+const DESIGN_HEIGHT = 520
+const CENTER = { x: DESIGN_WIDTH / 2, y: 275 }
 
-function clamp(value: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, value))
-}
-
-function makeLayout(simulation: Simulation): GraphLayout {
-  const paths = simulation.career_paths.slice(0, 5)
-  const subject: GraphNode = {
-    id: "subject",
-    label: simulation.student_summary?.name || "Subject",
-    subLabel: "Profile vector",
-    kind: "subject",
-    x: CENTER.x,
-    y: CENTER.y,
-  }
-
-  // Deterministic radial layout. All lines and overlay nodes use the same math,
-  // so there is no SVG/CSS drift and no manual pixel guessing.
-  const angles = paths.length <= 3
-    ? [-90, 150, 30]
-    : [-90, -165, -15, 150, 30]
-
-  const nodes = paths.map((path, index): GraphNode => {
-    const angle = (angles[index] ?? (-90 + index * 72)) * (Math.PI / 180)
-    const fit = clamp(path.fit_score || 70, 55, 100)
-    const radius = 132 + ((100 - fit) * 1.4)
-    return {
-      id: path.career_id,
-      label: path.title,
-      subLabel: `${path.fit_score}% fit`,
-      kind: "career",
-      x: CENTER.x + Math.cos(angle) * radius,
-      y: CENTER.y + Math.sin(angle) * radius,
-      path,
-      primary: index === 0,
-    }
-  })
-
-  return {
-    nodes: [subject, ...nodes],
-    links: nodes.map((node) => ({ from: subject, to: node })),
-  }
-}
-
-function useCanvasSize<T extends HTMLElement>() {
+function useMeasuredSize<T extends HTMLElement>(expanded: boolean) {
   const ref = useRef<T | null>(null)
-  const [size, setSize] = useState({ width: BASE_WIDTH, height: BASE_HEIGHT })
+  const [size, setSize] = useState({ width: DESIGN_WIDTH, height: DESIGN_HEIGHT })
 
   useEffect(() => {
     const element = ref.current
@@ -89,8 +43,8 @@ function useCanvasSize<T extends HTMLElement>() {
     const update = () => {
       const rect = element.getBoundingClientRect()
       setSize({
-        width: Math.max(320, rect.width),
-        height: Math.max(300, rect.height),
+        width: Math.max(360, rect.width),
+        height: Math.max(expanded ? 520 : 360, rect.height),
       })
     }
 
@@ -98,14 +52,81 @@ function useCanvasSize<T extends HTMLElement>() {
     const observer = new ResizeObserver(update)
     observer.observe(element)
     return () => observer.disconnect()
-  }, [])
+  }, [expanded])
 
   return { ref, size }
 }
 
-function drawGraph(
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value))
+}
+
+function makeLayout(simulation: Simulation, expanded: boolean): DrawLayout {
+  const careers = simulation.career_paths.slice(0, expanded ? 5 : 3)
+  const subject: DrawNode = {
+    id: "subject",
+    label: "YOU",
+    subtitle: simulation.student_summary?.name || "Profile",
+    x: CENTER.x,
+    y: CENTER.y,
+    radius: expanded ? 54 : 48,
+  }
+
+  const angleSets: Record<number, number[]> = {
+    1: [-90],
+    2: [-135, -45],
+    3: [-90, -158, -22],
+    4: [-100, -170, -10, 80],
+    5: [-90, -165, -25, 150, 30],
+  }
+  const angles = angleSets[careers.length] || angleSets[3]
+  const baseRadius = expanded ? 245 : 205
+
+  const careerNodes = careers.map((career, index) => {
+    const angle = (angles[index] ?? -90) * (Math.PI / 180)
+    const fitPull = (100 - clamp(career.fit_score || 70, 45, 100)) * 0.9
+    const radius = baseRadius + fitPull
+    return {
+      id: career.career_id,
+      label: career.title,
+      subtitle: `${career.fit_score}% fit`,
+      x: CENTER.x + Math.cos(angle) * radius,
+      y: CENTER.y + Math.sin(angle) * radius,
+      radius: expanded ? 46 : 42,
+      career,
+      primary: index === 0,
+    }
+  })
+
+  return { subject, careers: careerNodes }
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines = 2) {
+  const words = text.split(/\s+/)
+  const lines: string[] = []
+  let line = ""
+
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word
+    if (ctx.measureText(test).width <= maxWidth) {
+      line = test
+    } else {
+      if (line) lines.push(line)
+      line = word
+    }
+    if (lines.length === maxLines) break
+  }
+  if (line && lines.length < maxLines) lines.push(line)
+  if (words.length > 0 && lines.length === maxLines && words.join(" ") !== lines.join(" ")) {
+    const last = lines[lines.length - 1]
+    lines[lines.length - 1] = last.length > 14 ? `${last.slice(0, 13)}…` : `${last}…`
+  }
+  return lines
+}
+
+function drawCareerMap(
   canvas: HTMLCanvasElement | null,
-  layout: GraphLayout,
+  layout: DrawLayout,
   size: { width: number; height: number },
   expanded: boolean,
 ) {
@@ -123,68 +144,70 @@ function drawGraph(
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.clearRect(0, 0, size.width, size.height)
 
-  const scale = Math.min(size.width / BASE_WIDTH, size.height / BASE_HEIGHT)
-  const offsetX = (size.width - BASE_WIDTH * scale) / 2
-  const offsetY = (size.height - BASE_HEIGHT * scale) / 2
+  const scale = Math.min(size.width / DESIGN_WIDTH, size.height / DESIGN_HEIGHT)
+  const offsetX = (size.width - DESIGN_WIDTH * scale) / 2
+  const offsetY = (size.height - DESIGN_HEIGHT * scale) / 2
   const tx = (x: number) => offsetX + x * scale
   const ty = (y: number) => offsetY + y * scale
+  const tr = (r: number) => r * scale
 
-  ctx.lineCap = "round"
-  ctx.lineJoin = "round"
-
-  // Subtle measurement grid, visible enough to make the map feel intentional.
+  // background grid
   ctx.save()
-  ctx.globalAlpha = 0.12
-  ctx.strokeStyle = "#1f2937"
+  ctx.globalAlpha = 0.09
+  ctx.strokeStyle = "#111827"
   ctx.lineWidth = 1
-  const grid = 56 * scale
-  for (let x = offsetX; x <= offsetX + BASE_WIDTH * scale; x += grid) {
+  const grid = 70 * scale
+  for (let x = offsetX; x <= offsetX + DESIGN_WIDTH * scale + 1; x += grid) {
     ctx.beginPath()
     ctx.moveTo(x, offsetY)
-    ctx.lineTo(x, offsetY + BASE_HEIGHT * scale)
+    ctx.lineTo(x, offsetY + DESIGN_HEIGHT * scale)
     ctx.stroke()
   }
-  for (let y = offsetY; y <= offsetY + BASE_HEIGHT * scale; y += grid) {
+  for (let y = offsetY; y <= offsetY + DESIGN_HEIGHT * scale + 1; y += grid) {
     ctx.beginPath()
     ctx.moveTo(offsetX, y)
-    ctx.lineTo(offsetX + BASE_WIDTH * scale, y)
+    ctx.lineTo(offsetX + DESIGN_WIDTH * scale, y)
     ctx.stroke()
   }
   ctx.restore()
 
-  // Links.
-  layout.links.forEach((link, index) => {
-    const fromX = tx(link.from.x)
-    const fromY = ty(link.from.y)
-    const toX = tx(link.to.x)
-    const toY = ty(link.to.y)
-    const midX = (fromX + toX) / 2
-    const midY = (fromY + toY) / 2
+  // links
+  for (const node of layout.careers) {
+    const sx = tx(layout.subject.x)
+    const sy = ty(layout.subject.y)
+    const ex = tx(node.x)
+    const ey = ty(node.y)
+    const dx = ex - sx
+    const dy = ey - sy
+    const length = Math.hypot(dx, dy) || 1
+    const startX = sx + (dx / length) * tr(layout.subject.radius + 4)
+    const startY = sy + (dy / length) * tr(layout.subject.radius + 4)
+    const endX = ex - (dx / length) * tr(node.radius + 5)
+    const endY = ey - (dy / length) * tr(node.radius + 5)
 
     ctx.save()
-    ctx.strokeStyle = index === 0 ? "#1e6a8a" : "#111827"
-    ctx.globalAlpha = index === 0 ? 0.78 : 0.56
-    ctx.lineWidth = index === 0 ? 2.5 : 2
+    ctx.strokeStyle = node.primary ? "#1f7898" : "#111827"
+    ctx.globalAlpha = node.primary ? 0.8 : 0.42
+    ctx.lineWidth = node.primary ? 2.4 : 1.8
     ctx.beginPath()
-    ctx.moveTo(fromX, fromY)
-    ctx.quadraticCurveTo(midX, midY - 18 * scale, toX, toY)
+    ctx.moveTo(startX, startY)
+    ctx.lineTo(endX, endY)
     ctx.stroke()
     ctx.restore()
-  })
+  }
 
-  // Nodes.
-  layout.nodes.forEach((node) => {
+  const drawNode = (node: DrawNode, kind: "subject" | "career") => {
     const x = tx(node.x)
     const y = ty(node.y)
-    const r = node.kind === "subject" ? 44 * scale : 34 * scale
+    const r = tr(node.radius)
 
     ctx.save()
-    ctx.shadowColor = "rgba(15, 23, 42, 0.14)"
+    ctx.shadowColor = "rgba(15, 23, 42, 0.16)"
     ctx.shadowBlur = 18 * scale
     ctx.shadowOffsetY = 8 * scale
-    ctx.fillStyle = node.primary ? "#eef8fb" : "#ffffff"
-    ctx.strokeStyle = node.kind === "subject" ? "#111827" : node.primary ? "#1e6a8a" : "#111827"
-    ctx.lineWidth = node.kind === "subject" ? 4 * scale : 1.6 * scale
+    ctx.fillStyle = kind === "subject" ? "#ffffff" : node.primary ? "#edf8fc" : "#fffdf8"
+    ctx.strokeStyle = kind === "subject" ? "#111827" : node.primary ? "#1f7898" : "#111827"
+    ctx.lineWidth = kind === "subject" ? Math.max(3, 4 * scale) : Math.max(1.4, 1.7 * scale)
     ctx.beginPath()
     ctx.arc(x, y, r, 0, Math.PI * 2)
     ctx.fill()
@@ -192,54 +215,77 @@ function drawGraph(
     ctx.restore()
 
     ctx.save()
-    ctx.fillStyle = node.primary ? "#1e6a8a" : "#111827"
-    ctx.font = `${node.kind === "subject" ? 12 : 11}px ui-sans-serif, system-ui, -apple-system, Segoe UI`
     ctx.textAlign = "center"
     ctx.textBaseline = "middle"
-    ctx.fillText(node.kind === "subject" ? "YOU" : `${node.path?.fit_score ?? ""}%`, x, y)
+    ctx.fillStyle = kind === "subject" ? "#111827" : node.primary ? "#1f7898" : "#111827"
+    ctx.font = `900 ${Math.max(10, 12 * scale)}px ui-sans-serif, system-ui, -apple-system, Segoe UI`
+    if (kind === "subject") {
+      ctx.fillText("YOU", x, y - 4 * scale)
+      ctx.font = `600 ${Math.max(8, 9 * scale)}px ui-sans-serif, system-ui`
+      ctx.fillStyle = "rgba(17,24,39,0.55)"
+      ctx.fillText(node.subtitle.slice(0, 16), x, y + 12 * scale)
+    } else {
+      ctx.fillText(node.subtitle, x, y - 11 * scale)
+      ctx.font = `900 ${Math.max(8, 9 * scale)}px ui-sans-serif, system-ui, -apple-system, Segoe UI`
+      ctx.fillStyle = "#111827"
+      const lines = wrapText(ctx, node.label.toUpperCase(), r * 1.42, expanded ? 3 : 2)
+      const lineHeight = 10 * scale
+      const start = y + 7 * scale - ((lines.length - 1) * lineHeight) / 2
+      lines.forEach((line, index) => ctx.fillText(line, x, start + index * lineHeight))
+    }
     ctx.restore()
-  })
+  }
 
-  // Panel labels.
+  drawNode(layout.subject, "subject")
+  layout.careers.forEach((node) => drawNode(node, "career"))
+
   ctx.save()
   ctx.fillStyle = "rgba(17, 24, 39, 0.32)"
-  ctx.font = `700 ${expanded ? 12 : 11}px ui-sans-serif, system-ui, -apple-system, Segoe UI`
-  ctx.fillText("NEURAL MATCH", tx(135), ty(95))
-  ctx.fillText("VECTOR CACHE", tx(805), ty(292))
+  ctx.font = `900 ${Math.max(10, 12 * scale)}px ui-sans-serif, system-ui`
+  ctx.fillText("NEURAL MATCH", tx(78), ty(82))
+  ctx.fillText("VECTOR CACHE", tx(940), ty(355))
+  ctx.fillStyle = "#000"
+  ctx.font = `900 ${Math.max(13, 18 * scale)}px ui-monospace, SFMono-Regular, Menlo, monospace`
+  ctx.fillText("SIGNAL_GRAPH // 0x42", tx(70), ty(455))
+  ctx.fillStyle = "rgba(0,0,0,0.62)"
+  ctx.font = `500 ${Math.max(10, 14 * scale)}px ui-sans-serif, system-ui`
+  ctx.fillText("Career path centroids generated from profile signals", tx(70), ty(482))
   ctx.restore()
 }
 
-function useGraphDrawing(
-  canvasRef: React.RefObject<HTMLCanvasElement | null>,
-  layout: GraphLayout,
-  size: { width: number; height: number },
-  expanded: boolean,
-) {
-  useEffect(() => {
-    drawGraph(canvasRef.current, layout, size, expanded)
-  }, [canvasRef, layout, size, expanded])
-}
-
-function GraphCanvas({
-  simulation,
-  expanded = false,
-}: {
-  simulation: Simulation
-  expanded?: boolean
-}) {
+function GraphCanvas({ simulation, expanded = false }: { simulation: Simulation; expanded?: boolean }) {
   const router = useRouter()
-  const layout = useMemo(() => makeLayout(simulation), [simulation])
-  const { ref, size } = useCanvasSize<HTMLDivElement>()
+  const layout = useMemo(() => makeLayout(simulation, expanded), [simulation, expanded])
+  const { ref, size } = useMeasuredSize<HTMLDivElement>(expanded)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  useGraphDrawing(canvasRef, layout, size, expanded)
 
-  const scale = Math.min(size.width / BASE_WIDTH, size.height / BASE_HEIGHT)
-  const offsetX = (size.width - BASE_WIDTH * scale) / 2
-  const offsetY = (size.height - BASE_HEIGHT * scale) / 2
-  const project = (x: number, y: number) => ({
-    left: offsetX + x * scale,
-    top: offsetY + y * scale,
-  })
+  useEffect(() => {
+    drawCareerMap(canvasRef.current, layout, size, expanded)
+  }, [layout, size, expanded])
+
+  const handleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const px = event.clientX - rect.left
+    const py = event.clientY - rect.top
+    const scale = Math.min(size.width / DESIGN_WIDTH, size.height / DESIGN_HEIGHT)
+    const offsetX = (size.width - DESIGN_WIDTH * scale) / 2
+    const offsetY = (size.height - DESIGN_HEIGHT * scale) / 2
+    const toScreen = (node: DrawNode) => ({
+      x: offsetX + node.x * scale,
+      y: offsetY + node.y * scale,
+      r: node.radius * scale,
+    })
+
+    for (const node of layout.careers) {
+      const p = toScreen(node)
+      if (Math.hypot(px - p.x, py - p.y) <= p.r + 10) {
+        router.push(`/career/${simulation.simulation_id}/${node.career?.career_id}`)
+        return
+      }
+    }
+  }
 
   return (
     <div
@@ -249,58 +295,12 @@ function GraphCanvas({
         expanded ? "h-[min(78vh,760px)]" : "h-[430px]"
       )}
     >
-      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-label="Interactive career map" />
-
-      <div className="pointer-events-none absolute left-10 top-8 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.22em] text-black/35">
-        <Brain className="h-4 w-4" /> Neural_Match
-      </div>
-      <div className="pointer-events-none absolute right-10 top-1/2 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-black/35">
-        <Database className="h-4 w-4" /> Vector_Cache
-      </div>
-
-      {layout.nodes.map((node) => {
-        const point = project(node.x, node.y)
-        const isSubject = node.kind === "subject"
-        const sizeClass = isSubject ? "h-20 w-20" : "h-16 w-16"
-        return (
-          <motion.button
-            key={node.id}
-            type="button"
-            initial={{ opacity: 0, scale: 0.86 }}
-            animate={{ opacity: 1, scale: 1 }}
-            whileHover={node.kind === "career" ? { scale: 1.06 } : undefined}
-            transition={{ type: "spring", stiffness: 210, damping: 18 }}
-            disabled={isSubject}
-            onClick={() => node.path && router.push(`/career/${simulation.simulation_id}/${node.path.career_id}`)}
-            className={cn(
-              "absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border bg-white shadow-[0_10px_30px_rgba(15,23,42,0.12)] transition",
-              sizeClass,
-              isSubject ? "cursor-default border-black" : "cursor-pointer border-black/80 hover:border-[#1e6a8a] hover:bg-[#eef8fb]",
-              node.primary && "border-[#1e6a8a] bg-[#eef8fb]"
-            )}
-            style={{ left: point.left, top: point.top }}
-            aria-label={isSubject ? "Student profile node" : `Open ${node.label}`}
-          >
-            <span className="flex h-full w-full flex-col items-center justify-center gap-1 px-2 text-center">
-              {isSubject ? (
-                <User className="h-5 w-5 text-black" />
-              ) : node.primary ? (
-                <Zap className="h-5 w-5 text-[#1e6a8a]" />
-              ) : (
-                <Target className="h-5 w-5 text-black" />
-              )}
-              <span className="line-clamp-2 max-w-[96px] text-[10px] font-black uppercase leading-tight tracking-tight text-black">
-                {isSubject ? "Subject" : node.label}
-              </span>
-            </span>
-          </motion.button>
-        )
-      })}
-
-      <div className="pointer-events-none absolute bottom-8 left-10">
-        <p className="text-[14px] font-black uppercase tracking-[0.36em] text-black">Signal_Graph // 0x42</p>
-        <p className="mt-2 text-sm text-black/65">Visualizing path centroids and identity vectors</p>
-      </div>
+      <canvas
+        ref={canvasRef}
+        onClick={handleClick}
+        className="absolute inset-0 h-full w-full cursor-pointer"
+        aria-label="Interactive career map"
+      />
     </div>
   )
 }

@@ -42,10 +42,13 @@ async def run_automation(
     db: Session = Depends(get_db)
 ):
     sim_data = SimulationService.get_cached_simulation(payload.simulation_id)
-    if not sim_data:
-        raise HTTPException(status_code=404, detail="Simulation not found")
+    context = sim_data.get("simulation", {}) if sim_data else {}
 
-    context = sim_data.get("simulation", {})
+    # Render/backend restarts can clear the in-memory simulation cache while the
+    # frontend still has the simulation in localStorage. Accept the client-supplied
+    # context as a resilience path instead of returning a hard 404.
+    if payload.context_overrides:
+        context.update(payload.context_overrides)
 
     try:
         content = await ai_service.generate_automation(
@@ -53,6 +56,10 @@ async def run_automation(
             context,
             payload.additional_instructions
         )
-        return AutomationResponse(content=content)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        metadata = {"context_source": "cache" if sim_data else "client_or_fallback"}
+        return AutomationResponse(content=content, metadata=metadata)
+    except Exception:
+        return AutomationResponse(
+            content="This generated asset is temporarily unavailable. Your dashboard, sprint, and roadmap remain available. Please retry in a few seconds.",
+            metadata={"context_source": "fallback"},
+        )

@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { runAutomation } from "@/lib/api"
+import { getSimulation } from "@/lib/simulation-store"
 import { cn } from "@/lib/utils"
 
 interface AutomationHubProps {
@@ -45,10 +46,12 @@ export function AutomationHub({ simulationId, careerTitle }: AutomationHubProps)
   const handleRun = async (type: string) => {
     setLoading(prev => ({ ...prev, [type]: true }))
     try {
-      const res = await runAutomation(type, simulationId)
+      const localSimulation = getSimulation(simulationId)
+      const res = await runAutomation(type, simulationId, undefined, localSimulation || undefined)
       setContent(prev => ({ ...prev, [type]: res.content }))
     } catch (error) {
       console.error("Automation failed:", error)
+      setContent(prev => ({ ...prev, [type]: "This generated asset could not be created right now. Your dashboard and sprint are still available. Please retry in a few seconds." }))
     } finally {
       setLoading(prev => ({ ...prev, [type]: false }))
     }

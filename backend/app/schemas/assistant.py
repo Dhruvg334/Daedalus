@@ -19,6 +19,7 @@ class AutomationRequest(BaseModel):
     automation_type: str # "resume", "cover_letter", "linkedin", "readme", "learning_plan"
     simulation_id: str
     additional_instructions: Optional[str] = None
+    context_overrides: Optional[Dict[str, Any]] = None
 
 class AutomationResponse(BaseModel):
     content: str

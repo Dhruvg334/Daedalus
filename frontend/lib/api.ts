@@ -134,13 +134,14 @@ export function getLearningPath(career_id: string) {
   return request<LearningHubResponse>(`/api/v1/hubs/learning-path/${career_id}`, undefined, { timeoutMs: 30000, retries: 1 });
 }
 
-export function runAutomation(type: string, simulation_id: string, instructions?: string) {
+export function runAutomation(type: string, simulation_id: string, instructions?: string, context_overrides?: Partial<Simulation>) {
   return request<{ content: string }>("/api/v1/assistant/automate", {
     method: "POST",
     body: JSON.stringify({
       automation_type: type,
       simulation_id,
-      additional_instructions: instructions
+      additional_instructions: instructions,
+      context_overrides
     }),
   }, { timeoutMs: 45000, retries: 1 });
 }
