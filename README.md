@@ -48,7 +48,8 @@ The product is deliberately **not** a generic chatbot. The core experience is bu
 | Learning hub | Recommends learning resources for the selected career path |
 | Opportunity hub | Surfaces relevant internships, competitions, and project opportunities |
 | 7-day sprint | Converts the recommendation into an immediate action plan |
-| Trace view | Explains the recommendation pipeline and scoring logic |
+| Trace view | Explains deterministic scoring, Gemini reranking status, and recommendation logic |
+| About page | Explains the product, innovation, social relevance, video slot, and developer contributions |
 | Share page | Creates a clean summary of the user’s career map |
 | Resume flow | Lets returning users continue their most recent dashboard from the home page |
 
@@ -64,8 +65,11 @@ flowchart LR
     D --> E[Profile Normalization]
     E --> F[Career Library]
     F --> G[Scoring Engine]
-    G --> H[Simulation Builder]
-    H --> I[Structured Simulation JSON]
+    G --> H{Gemini Available?}
+    H -->|Yes| R[Optional AI Rerank]
+    H -->|No| S[Deterministic Fallback]
+    R --> I[Structured Simulation JSON]
+    S --> I[Structured Simulation JSON]
     I --> J[Dashboard and Detail Pages]
     I --> K[Skills, Learning, Opportunities]
     I --> L[Sprint, Trace, Share]
@@ -87,7 +91,8 @@ sequenceDiagram
     FE->>API: POST /api/v1/simulate
     API->>Engine: Normalize profile and rank careers
     Engine->>Engine: Score fit, gaps, risk, AI exposure
-    Engine-->>API: Structured simulation object
+    Engine->>Engine: Optionally rerank approved paths with Gemini
+    Engine-->>API: Structured simulation object with trace metadata
     API-->>FE: Career simulation response
     FE->>Store: Save latest simulation locally
     FE-->>U: Show dashboard, roadmap, sprint, and trace
@@ -101,6 +106,7 @@ sequenceDiagram
 frontend/
 ├── app/                         # Next.js App Router pages
 │   ├── page.tsx                 # Landing page
+│   ├── about/                   # Product explanation, demo video slot, and team
 │   ├── onboarding/              # Guided profile flow
 │   ├── loading/                 # Simulation execution state
 │   ├── dashboard/[simulationId] # Main career dashboard
@@ -152,6 +158,7 @@ The frontend talks to the backend through a small set of stable endpoints.
 | GET | `/api/v1/hubs/learning-path/{career_id}` | Learning resources |
 | GET | `/api/v1/progress/{simulation_id}` | Progress state |
 | POST | `/api/v1/progress/update` | Update progress |
+| GET | `/api/v1/assistant/status` | Gemini configuration diagnostics |
 | POST | `/api/v1/assistant/chat` | Optional assistant chat |
 | POST | `/api/v1/assistant/automate` | Optional generated assets |
 | POST | `/api/v1/feedback` | Feedback capture |
@@ -284,7 +291,7 @@ Optional:
 GOOGLE_API_KEY=<your-key>
 ```
 
-If `GOOGLE_API_KEY` is absent, the assistant uses fallback responses and the core product flow remains available.
+If `GOOGLE_API_KEY` is absent, Daedalus uses deterministic simulation and fallback assistant responses. If it is present, Gemini can rerank approved career paths and generate assistant/automation responses. Check `/api/v1/assistant/status` in backend logs or directly during deployment debugging.
 
 ---
 
@@ -306,6 +313,7 @@ flowchart TD
     F --> L[7-Day Sprint]
     F --> M[Trace]
     F --> N[Share]
+    A --> Q[About]
     N --> O[Return Home]
     O --> P[Continue Dashboard]
 ```
@@ -335,6 +343,12 @@ Manual product flow:
 Home → Demo Personas → Loading → Dashboard → Career Detail → Skills → Learning → Opportunities → Sprint → Trace → Share → Home → Continue
 ```
 
+Gemini diagnostics:
+
+```text
+GET /api/v1/assistant/status
+```
+
 ---
 
 ## Deployment
@@ -356,7 +370,7 @@ Backend deployment notes:
 
 - Python 3.12 is recommended.
 - Render start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- CORS should allow the deployed Vercel frontend domain.
+- CORS should allow the deployed Vercel frontend domain. Avoid trailing slashes in allowed origins.
 - The backend URL is not documented publicly to reduce unnecessary direct traffic.
 
 ---
@@ -373,6 +387,6 @@ Backend deployment notes:
 
 ## Current Status
 
-Daedalus is live with an end-to-end product flow covering onboarding, demo profiles, simulation, dashboard, detail pages, skill mapping, learning and opportunity modules, progress tracking, sprint planning, trace view, and share page.
+Daedalus is live with an end-to-end product flow covering onboarding, demo profiles, simulation, dashboard, detail pages, skill mapping, learning and opportunity modules, progress tracking, sprint planning, trace view, share page, and about page. The recommendation system now combines an expanded career library, deterministic fallback ranking, traceable scoring, and optional Gemini reranking when configured.
 
 The current backend uses SQLite and runtime caching where applicable. For a larger multi-user release, persistence should move to a managed database such as Postgres, Supabase, or Neon.

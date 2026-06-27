@@ -132,6 +132,7 @@ export default function Home() {
             {[
               { href: "/onboarding", label: "Get Started" },
               { href: "/demo-personas", label: "Demo" },
+              { href: "/about", label: "About" },
               { href: "#how-it-works", label: "How it Works" },
             ].map(({ href, label }) => (
               <Link key={href} href={href} className="hover:text-white transition-colors">{label}</Link>

@@ -27,6 +27,7 @@ export function FloatingNav() {
             { href: "#how-it-works", label: "How it Works" },
             { href: "#cta", label: "Features" },
             { href: "/demo-personas", label: "Demo" },
+            { href: "/about", label: "About" },
           ].map(({ href, label }) => (
             <Link key={href} href={href}
               className="text-sm font-medium text-neutral-500 hover:text-black transition-colors">

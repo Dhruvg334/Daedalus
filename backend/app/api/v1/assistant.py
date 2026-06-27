@@ -8,6 +8,15 @@ from ...services.simulation_service import SimulationService
 router = APIRouter()
 ai_service = AIService()
 
+@router.get("/status")
+async def assistant_status():
+    status = ai_service.get_status()
+    return {
+        "success": True,
+        "assistant": status,
+        "message": "Gemini is ready." if status.get("model_ready") else "Gemini is not active; deterministic fallback responses are being used."
+    }
+
 @router.post("/chat", response_model=AssistantChatResponse)
 async def chat_with_assistant(
     payload: AssistantChatRequest,

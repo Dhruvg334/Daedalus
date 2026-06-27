@@ -14,7 +14,7 @@ async def simulate_career(
 ):
     service = SimulationService(db)
     try:
-        return service.run_simulation(payload)
+        return await service.run_simulation_async(payload)
     except Exception as e:
         raise HTTPException(
             status_code=500,

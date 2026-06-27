@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import logging
 import re
 import time
 import uuid
@@ -9,6 +11,8 @@ from typing import Any, Dict, List, Set
 from sqlalchemy.orm import Session
 
 from ..schemas.simulation import SimulationRequest
+
+logger = logging.getLogger("daedalus.simulation")
 
 
 DEMO_PERSONAS: List[Dict[str, Any]] = [
@@ -365,6 +369,86 @@ CAREER_LIBRARY: List[Dict[str, Any]] = [
         },
     },
     {
+        "career_id": "startup_venture_builder",
+        "title": "Startup Venture Builder",
+        "cluster": "Entrepreneurship & Product",
+        "one_line_summary": "Builds, validates, and launches new ventures by combining customer insight, product thinking, finance, and execution.",
+        "mission_statement": "Turn ambitious ideas into validated businesses with disciplined experiments.",
+        "related_interests": ["startup", "founder", "entrepreneur", "business", "strategy", "finance", "product", "sales", "marketing", "innovation"],
+        "related_subjects": ["business", "economics", "entrepreneurship", "mathematics", "computer science"],
+        "work_styles": ["builder", "leader", "creative", "independent", "risk-taking", "operator"],
+        "required_skills": ["customer discovery", "business modeling", "financial basics", "pitching", "product validation", "market research"],
+        "ai_exposure_score": 7,
+        "difficulty_score": 8,
+        "growth_potential_score": 10,
+        "human_advantage": ["vision", "taste", "risk judgment", "selling", "leadership", "resilience"],
+        "starter_project": {
+            "title": "Validate a micro-startup idea",
+            "description": "Interview 10 target users, define one painful problem, create a landing page, and measure interest.",
+            "expected_output": "A validation memo with user quotes, problem statement, landing page, and next decision.",
+        },
+    },
+    {
+        "career_id": "investment_research_analyst",
+        "title": "Investment Research Analyst",
+        "cluster": "Finance & Markets",
+        "one_line_summary": "Studies companies, markets, and financial data to form evidence-backed investment views.",
+        "mission_statement": "Convert market noise into disciplined financial judgment.",
+        "related_interests": ["finance", "stocks", "markets", "investment", "trading", "economics", "business", "valuation", "founder"],
+        "related_subjects": ["economics", "mathematics", "statistics", "accounts", "commerce", "business"],
+        "work_styles": ["analyst", "structured", "research", "independent", "decision-making"],
+        "required_skills": ["financial modeling", "Excel", "market research", "valuation", "business analysis", "risk assessment"],
+        "ai_exposure_score": 6,
+        "difficulty_score": 7,
+        "growth_potential_score": 8,
+        "human_advantage": ["judgment under uncertainty", "business intuition", "risk framing", "source skepticism"],
+        "starter_project": {
+            "title": "Build a company research note",
+            "description": "Pick one public company, study its business model, competitors, risks, and financial signals.",
+            "expected_output": "A 2-page investment-style memo with thesis, risks, and key metrics.",
+        },
+    },
+    {
+        "career_id": "fintech_founder_operator",
+        "title": "FinTech Founder-Operator",
+        "cluster": "Finance & Entrepreneurship",
+        "one_line_summary": "Builds financial products by combining market understanding, user trust, regulation awareness, and product execution.",
+        "mission_statement": "Create useful financial tools that improve decisions, access, or trust.",
+        "related_interests": ["finance", "fintech", "startup", "founder", "entrepreneur", "business", "payments", "wealth", "markets", "product"],
+        "related_subjects": ["economics", "business", "mathematics", "statistics", "computer science"],
+        "work_styles": ["builder", "leader", "analyst", "operator", "structured"],
+        "required_skills": ["financial literacy", "product discovery", "regulatory awareness", "user research", "analytics", "pitching"],
+        "ai_exposure_score": 7,
+        "difficulty_score": 8,
+        "growth_potential_score": 9,
+        "human_advantage": ["trust building", "business model design", "regulatory judgment", "user empathy"],
+        "starter_project": {
+            "title": "Prototype a personal finance product",
+            "description": "Design a small tool that helps a specific user group make one better financial decision.",
+            "expected_output": "A clickable prototype, target user notes, and one-page product thesis.",
+        },
+    },
+    {
+        "career_id": "product_manager_ai_era",
+        "title": "AI-Era Product Manager",
+        "cluster": "Product & Strategy",
+        "one_line_summary": "Chooses what to build, why it matters, and how teams should validate and ship useful products.",
+        "mission_statement": "Turn user problems, business strategy, and technology capability into focused product decisions.",
+        "related_interests": ["product", "business", "startup", "strategy", "design", "technology", "founder", "users", "leadership"],
+        "related_subjects": ["business", "economics", "computer science", "psychology", "design"],
+        "work_styles": ["collaborative", "leader", "structured", "creative", "operator"],
+        "required_skills": ["user research", "prioritization", "roadmapping", "analytics", "communication", "AI literacy"],
+        "ai_exposure_score": 6,
+        "difficulty_score": 7,
+        "growth_potential_score": 9,
+        "human_advantage": ["problem framing", "prioritization", "stakeholder alignment", "taste"],
+        "starter_project": {
+            "title": "Write a product one-pager",
+            "description": "Choose one user problem and define the target user, insight, solution, success metric, and product scope.",
+            "expected_output": "A clear product brief with tradeoffs and validation plan.",
+        },
+    },
+    {
         "career_id": "ai_policy_governance_analyst",
         "title": "AI Policy & Governance Analyst",
         "cluster": "Policy & Governance",
@@ -391,8 +475,8 @@ ALIASES: Dict[str, Set[str]] = {
     "ai": {"ai", "artificial", "intelligence", "genai", "generative", "llm", "machine", "learning", "ml"},
     "coding": {"coding", "code", "programming", "python", "javascript", "js", "software", "web", "app", "developer"},
     "design": {"design", "figma", "ux", "ui", "visual", "prototype", "art", "creative"},
-    "business": {"business", "startup", "entrepreneurship", "sales", "marketing", "strategy", "growth"},
-    "finance": {"finance", "investment", "markets", "stocks", "banking", "fintech", "economics"},
+    "business": {"business", "startup", "entrepreneurship", "entrepreneur", "founder", "venture", "sales", "marketing", "strategy", "growth", "operator", "leadership"},
+    "finance": {"finance", "investment", "investing", "markets", "market", "stocks", "stock", "trading", "banking", "fintech", "economics", "valuation", "wealth", "portfolio"},
     "data": {"data", "analytics", "statistics", "excel", "sql", "dashboard", "research"},
     "healthcare": {"health", "healthcare", "medicine", "biology", "bio", "medical", "chemistry"},
     "education": {"education", "teaching", "learning", "mentor", "course", "tutor"},
@@ -415,12 +499,34 @@ class SimulationService:
         return cls._cache.get(simulation_id)
 
     def run_simulation(self, payload: SimulationRequest) -> Dict[str, Any]:
+        # Synchronous fallback retained for local smoke tests and older imports.
+        return asyncio.run(self.run_simulation_async(payload))
+
+    async def run_simulation_async(self, payload: SimulationRequest) -> Dict[str, Any]:
         start_time = time.time()
         profile = payload.student_profile.model_dump()
         top_n = max(1, min(payload.options.preferred_number_of_paths, 5))
 
         rank_start = time.time()
         ranked_results = self._rank_careers_with_logic(profile)
+        deterministic_top = [r["career"]["career_id"] for r in ranked_results[:top_n]]
+        ai_status = {"used": False, "reason": "not_configured_or_unavailable", "selected_ids": []}
+        try:
+            from .ai_service import AIService
+
+            ai_service = AIService()
+            ai_ids = await ai_service.rerank_career_ids(profile, [r["career"] for r in ranked_results[:10]], top_n=top_n)
+            if ai_ids:
+                by_id = {item["career"]["career_id"]: item for item in ranked_results}
+                selected = [by_id[cid] for cid in ai_ids if cid in by_id]
+                for item in ranked_results:
+                    if item not in selected:
+                        selected.append(item)
+                ranked_results = selected
+                ai_status = {"used": True, "reason": "gemini_rerank", "selected_ids": ai_ids}
+        except Exception as exc:
+            logger.warning("Gemini simulation rerank unavailable; deterministic ranking used", extra={"error": str(exc)})
+            ai_status = {"used": False, "reason": str(exc)[:160], "selected_ids": []}
         rank_end = time.time()
 
         career_paths = [self._build_career_path(profile, item["career"], index, item) for index, item in enumerate(ranked_results[:top_n])]
@@ -472,6 +578,8 @@ class SimulationService:
                         "summary": "Ranked the expanded career library using weighted overlap and semantic aliases.",
                         "detail": {
                             "latency_ms": round((rank_end - rank_start) * 1000, 2),
+                            "deterministic_top": deterministic_top,
+                            "ai_rerank": ai_status,
                             "top_matches": [
                                 {
                                     "career_id": r["career"]["career_id"],
@@ -491,7 +599,7 @@ class SimulationService:
                 ],
                 "warnings": [
                     "Career recommendations are directional and meant for exploration, not final life decisions.",
-                    "Core simulation is deterministic for reliability; live Gemini is used only for assistant/automation features when configured.",
+                    "Gemini is used for simulation reranking when configured; deterministic ranking remains the fallback for reliability.",
                 ],
             },
         }

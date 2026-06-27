@@ -44,7 +44,7 @@ export default function CTASection() {
             </div>
 
             <p className="text-slate-400 text-[12px] mt-6">
-              Track 04 — What Do I Even Do With My Life? · No account required
+              No account required · Built for real career clarity
             </p>
           </div>
         </div>

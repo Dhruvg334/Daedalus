@@ -20,7 +20,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { CareerDNA } from "@/components/intelligence/career-dna";
 import { CareerGraph } from "@/components/intelligence/career-graph";
-import { useHackathon } from "@/components/layout/hackathon-modes";
 import confetti from "canvas-confetti";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +27,6 @@ export default function DashboardPage() {
   const params = useParams<{ simulationId: string }>();
   const simulationId = params.simulationId as string;
   const router = useRouter();
-  const { presentationMode } = useHackathon();
 
   const [data, setData] = useState<Simulation | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,7 +111,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2 mb-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs font-semibold text-neutral-400 uppercase tracking-widest">
-                {presentationMode ? "Live Presentation" : "Career Command Center"}
+                Career Command Center
               </span>
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight mb-2">

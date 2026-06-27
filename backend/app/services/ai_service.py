@@ -3,22 +3,101 @@ try:
 except Exception:
     genai = None
 
-from typing import List, Dict, Any, Optional
+import asyncio
 import json
+import logging
+import re
+from typing import Any, Dict, List, Optional
 
 from ..core.config import settings
 from ..schemas.assistant import AssistantMessage
+
+logger = logging.getLogger("daedalus.ai")
 
 
 class AIService:
     def __init__(self):
         self.model = None
-        if settings.GOOGLE_API_KEY and genai is not None:
-            try:
-                genai.configure(api_key=settings.GOOGLE_API_KEY)
-                self.model = genai.GenerativeModel("gemini-1.5-flash")
-            except Exception:
-                self.model = None
+        self.status_reason = "not_configured"
+        if not settings.GOOGLE_API_KEY:
+            logger.info("Gemini not configured: GOOGLE_API_KEY missing")
+            return
+        if genai is None:
+            self.status_reason = "package_missing"
+            logger.warning("Gemini package unavailable: install google-generativeai")
+            return
+        try:
+            genai.configure(api_key=settings.GOOGLE_API_KEY)
+            self.model = genai.GenerativeModel("gemini-1.5-flash")
+            self.status_reason = "ready"
+            logger.info("Gemini configured successfully")
+        except Exception as exc:
+            self.model = None
+            self.status_reason = f"configuration_failed: {str(exc)[:120]}"
+            logger.exception("Gemini configuration failed")
+
+    def get_status(self) -> Dict[str, Any]:
+        return {
+            "provider": "gemini",
+            "package_available": genai is not None,
+            "api_key_configured": bool(settings.GOOGLE_API_KEY),
+            "model_ready": self.model is not None,
+            "status_reason": self.status_reason,
+        }
+
+    async def rerank_career_ids(self, profile: Dict[str, Any], careers: List[Dict[str, Any]], top_n: int = 3) -> List[str]:
+        """Ask Gemini to rerank candidate career IDs. Returns [] on any failure.
+
+        This is deliberately constrained: Gemini can choose from backend-approved IDs only.
+        The deterministic ranking remains the fallback and source of complete path data.
+        """
+        if not self.model:
+            logger.info("Gemini rerank skipped", extra={"reason": self.status_reason})
+            return []
+
+        candidate_payload = [
+            {
+                "career_id": c.get("career_id"),
+                "title": c.get("title"),
+                "cluster": c.get("cluster"),
+                "summary": c.get("one_line_summary"),
+                "skills": c.get("required_skills", [])[:6],
+                "signals": {
+                    "interests": c.get("related_interests", [])[:10],
+                    "subjects": c.get("related_subjects", [])[:8],
+                    "work_styles": c.get("work_styles", [])[:8],
+                },
+            }
+            for c in careers
+        ]
+        prompt = f"""
+You are reranking career options for Daedalus, an AI-era career navigation product.
+Choose the best {top_n} career_ids from the provided candidate list for this user profile.
+Return ONLY valid JSON in this exact shape: {{"career_ids": ["id1", "id2", "id3"], "reason": "short reason"}}
+Do not invent career IDs. Prefer founder/venture paths when founder, startup, business ownership, or entrepreneurship signals are strong.
+Prefer finance/investment/fintech paths when finance, stocks, markets, investing, or business valuation signals are strong.
+
+User profile:
+{json.dumps(profile, ensure_ascii=False)}
+
+Candidate careers:
+{json.dumps(candidate_payload, ensure_ascii=False)}
+"""
+        try:
+            response = await asyncio.wait_for(self.model.generate_content_async(prompt), timeout=10)
+            text = response.text or ""
+            match = re.search(r"\{.*\}", text, re.S)
+            if not match:
+                logger.warning("Gemini rerank returned non-JSON", extra={"text_preview": text[:200]})
+                return []
+            parsed = json.loads(match.group(0))
+            allowed = {c.get("career_id") for c in careers}
+            ids = [cid for cid in parsed.get("career_ids", []) if cid in allowed]
+            logger.info("Gemini rerank completed", extra={"selected_ids": ids, "reason": parsed.get("reason")})
+            return ids[:top_n]
+        except Exception as exc:
+            logger.warning("Gemini rerank failed", extra={"error": str(exc)[:240]})
+            return []
 
     async def get_chat_response(
         self,
@@ -45,9 +124,11 @@ class AIService:
         """
 
         try:
-            response = await self.model.generate_content_async(prompt)
+            response = await asyncio.wait_for(self.model.generate_content_async(prompt), timeout=15)
+            logger.info("Gemini assistant response completed")
             return response.text or self._offline_chat_response(messages, context)
-        except Exception:
+        except Exception as exc:
+            logger.warning("Gemini assistant response failed", extra={"error": str(exc)[:240]})
             return self._offline_chat_response(messages, context, temporary=True)
 
     async def generate_automation(
@@ -80,9 +161,11 @@ class AIService:
         """
 
         try:
-            response = await self.model.generate_content_async(full_prompt)
+            response = await asyncio.wait_for(self.model.generate_content_async(full_prompt), timeout=20)
+            logger.info("Gemini automation completed", extra={"automation_type": automation_type})
             return response.text or self._automation_fallback(automation_type, context)
-        except Exception:
+        except Exception as exc:
+            logger.warning("Gemini automation failed", extra={"automation_type": automation_type, "error": str(exc)[:240]})
             return self._automation_fallback(automation_type, context, temporary=True)
 
     def _offline_chat_response(self, messages: List[AssistantMessage], context: Dict[str, Any], temporary: bool = False) -> str:

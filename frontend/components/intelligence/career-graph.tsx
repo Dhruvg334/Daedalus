@@ -12,46 +12,42 @@ interface CareerGraphProps {
   className?: string
 }
 
-type DrawNode = {
+type GraphNode = {
   id: string
   label: string
   subtitle: string
   x: number
   y: number
-  radius: number
+  r: number
   career?: CareerPath
   primary?: boolean
 }
 
-type DrawLayout = {
-  subject: DrawNode
-  careers: DrawNode[]
+type GraphLayout = {
+  subject: GraphNode
+  careers: GraphNode[]
 }
 
-const DESIGN_WIDTH = 1200
-const DESIGN_HEIGHT = 520
-const CENTER = { x: DESIGN_WIDTH / 2, y: 275 }
-
-function useMeasuredSize<T extends HTMLElement>(expanded: boolean) {
+function useCanvasSize<T extends HTMLElement>(expanded: boolean) {
   const ref = useRef<T | null>(null)
-  const [size, setSize] = useState({ width: DESIGN_WIDTH, height: DESIGN_HEIGHT })
+  const [size, setSize] = useState({ width: 960, height: expanded ? 640 : 380 })
 
   useEffect(() => {
-    const element = ref.current
-    if (!element) return
+    const el = ref.current
+    if (!el) return
 
     const update = () => {
-      const rect = element.getBoundingClientRect()
+      const rect = el.getBoundingClientRect()
       setSize({
-        width: Math.max(360, rect.width),
-        height: Math.max(expanded ? 520 : 360, rect.height),
+        width: Math.max(320, rect.width),
+        height: Math.max(expanded ? 560 : 360, rect.height),
       })
     }
 
     update()
-    const observer = new ResizeObserver(update)
-    observer.observe(element)
-    return () => observer.disconnect()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [expanded])
 
   return { ref, size }
@@ -61,155 +57,152 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value))
 }
 
-function makeLayout(simulation: Simulation, expanded: boolean): DrawLayout {
-  const careers = simulation.career_paths.slice(0, expanded ? 5 : 3)
-  const subject: DrawNode = {
+function truncate(text: string, limit: number) {
+  return text.length <= limit ? text : `${text.slice(0, limit - 1)}…`
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines: number) {
+  const words = text.split(/\s+/).filter(Boolean)
+  const lines: string[] = []
+  let current = ""
+
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word
+    if (ctx.measureText(next).width <= maxWidth) {
+      current = next
+    } else {
+      if (current) lines.push(current)
+      current = word
+    }
+    if (lines.length >= maxLines) break
+  }
+
+  if (current && lines.length < maxLines) lines.push(current)
+  if (lines.length === maxLines && words.join(" ") !== lines.join(" ")) {
+    lines[lines.length - 1] = truncate(lines[lines.length - 1], 15)
+  }
+  return lines
+}
+
+function buildLayout(simulation: Simulation, size: { width: number; height: number }, expanded: boolean): GraphLayout {
+  const visibleCareers = simulation.career_paths.slice(0, expanded ? 5 : 3)
+  const pad = expanded ? 88 : 60
+  const subjectRadius = expanded ? 52 : 44
+  const careerRadius = expanded ? 44 : 38
+
+  const centerX = size.width / 2
+  const centerY = expanded ? size.height * 0.52 : size.height * 0.54
+  const maxHorizontal = Math.max(120, size.width / 2 - pad - careerRadius)
+  const maxVertical = Math.max(100, size.height / 2 - pad - careerRadius)
+  const ring = Math.min(maxHorizontal, maxVertical, expanded ? 260 : 180)
+
+  const anglesByCount: Record<number, number[]> = {
+    1: [-90],
+    2: [-135, -45],
+    3: [-90, -150, -30],
+    4: [-100, -165, -15, 70],
+    5: [-90, -160, -25, 150, 35],
+  }
+  const angles = anglesByCount[visibleCareers.length] || anglesByCount[3]
+
+  const subject: GraphNode = {
     id: "subject",
     label: "YOU",
     subtitle: simulation.student_summary?.name || "Profile",
-    x: CENTER.x,
-    y: CENTER.y,
-    radius: expanded ? 54 : 48,
+    x: centerX,
+    y: centerY,
+    r: subjectRadius,
   }
 
-  const angleSets: Record<number, number[]> = {
-    1: [-90],
-    2: [-135, -45],
-    3: [-90, -158, -22],
-    4: [-100, -170, -10, 80],
-    5: [-90, -165, -25, 150, 30],
-  }
-  const angles = angleSets[careers.length] || angleSets[3]
-  const baseRadius = expanded ? 245 : 205
-
-  const careerNodes = careers.map((career, index) => {
-    const angle = (angles[index] ?? -90) * (Math.PI / 180)
-    const fitPull = (100 - clamp(career.fit_score || 70, 45, 100)) * 0.9
-    const radius = baseRadius + fitPull
+  const careers = visibleCareers.map((career, index) => {
+    const angle = (angles[index] || -90) * (Math.PI / 180)
+    const distance = ring + (index === 0 ? 14 : 0)
+    const rawX = centerX + Math.cos(angle) * distance
+    const rawY = centerY + Math.sin(angle) * distance
     return {
       id: career.career_id,
       label: career.title,
       subtitle: `${career.fit_score}% fit`,
-      x: CENTER.x + Math.cos(angle) * radius,
-      y: CENTER.y + Math.sin(angle) * radius,
-      radius: expanded ? 46 : 42,
+      x: clamp(rawX, pad + careerRadius, size.width - pad - careerRadius),
+      y: clamp(rawY, pad + careerRadius, size.height - pad - careerRadius),
+      r: careerRadius,
       career,
       primary: index === 0,
     }
   })
 
-  return { subject, careers: careerNodes }
+  return { subject, careers }
 }
 
-function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines = 2) {
-  const words = text.split(/\s+/)
-  const lines: string[] = []
-  let line = ""
-
-  for (const word of words) {
-    const test = line ? `${line} ${word}` : word
-    if (ctx.measureText(test).width <= maxWidth) {
-      line = test
-    } else {
-      if (line) lines.push(line)
-      line = word
-    }
-    if (lines.length === maxLines) break
-  }
-  if (line && lines.length < maxLines) lines.push(line)
-  if (words.length > 0 && lines.length === maxLines && words.join(" ") !== lines.join(" ")) {
-    const last = lines[lines.length - 1]
-    lines[lines.length - 1] = last.length > 14 ? `${last.slice(0, 13)}…` : `${last}…`
-  }
-  return lines
-}
-
-function drawCareerMap(
-  canvas: HTMLCanvasElement | null,
-  layout: DrawLayout,
-  size: { width: number; height: number },
-  expanded: boolean,
-) {
+function drawMap(canvas: HTMLCanvasElement | null, layout: GraphLayout, size: { width: number; height: number }, expanded: boolean) {
   if (!canvas) return
-
-  const dpr = window.devicePixelRatio || 1
-  canvas.width = Math.floor(size.width * dpr)
-  canvas.height = Math.floor(size.height * dpr)
-  canvas.style.width = `${size.width}px`
-  canvas.style.height = `${size.height}px`
-
   const ctx = canvas.getContext("2d")
   if (!ctx) return
 
+  const dpr = window.devicePixelRatio || 1
+  canvas.width = Math.round(size.width * dpr)
+  canvas.height = Math.round(size.height * dpr)
+  canvas.style.width = `${size.width}px`
+  canvas.style.height = `${size.height}px`
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.clearRect(0, 0, size.width, size.height)
 
-  const scale = Math.min(size.width / DESIGN_WIDTH, size.height / DESIGN_HEIGHT)
-  const offsetX = (size.width - DESIGN_WIDTH * scale) / 2
-  const offsetY = (size.height - DESIGN_HEIGHT * scale) / 2
-  const tx = (x: number) => offsetX + x * scale
-  const ty = (y: number) => offsetY + y * scale
-  const tr = (r: number) => r * scale
+  const borderPad = expanded ? 46 : 34
+  const gridLeft = borderPad
+  const gridTop = borderPad
+  const gridRight = size.width - borderPad
+  const gridBottom = size.height - borderPad
 
-  // background grid
   ctx.save()
-  ctx.globalAlpha = 0.09
-  ctx.strokeStyle = "#111827"
+  ctx.strokeStyle = "rgba(17,24,39,0.08)"
   ctx.lineWidth = 1
-  const grid = 70 * scale
-  for (let x = offsetX; x <= offsetX + DESIGN_WIDTH * scale + 1; x += grid) {
+  const cols = expanded ? 14 : 10
+  const rows = expanded ? 7 : 5
+  for (let i = 0; i <= cols; i++) {
+    const x = gridLeft + ((gridRight - gridLeft) * i) / cols
     ctx.beginPath()
-    ctx.moveTo(x, offsetY)
-    ctx.lineTo(x, offsetY + DESIGN_HEIGHT * scale)
+    ctx.moveTo(x, gridTop)
+    ctx.lineTo(x, gridBottom)
     ctx.stroke()
   }
-  for (let y = offsetY; y <= offsetY + DESIGN_HEIGHT * scale + 1; y += grid) {
+  for (let i = 0; i <= rows; i++) {
+    const y = gridTop + ((gridBottom - gridTop) * i) / rows
     ctx.beginPath()
-    ctx.moveTo(offsetX, y)
-    ctx.lineTo(offsetX + DESIGN_WIDTH * scale, y)
+    ctx.moveTo(gridLeft, y)
+    ctx.lineTo(gridRight, y)
     ctx.stroke()
   }
   ctx.restore()
 
-  // links
   for (const node of layout.careers) {
-    const sx = tx(layout.subject.x)
-    const sy = ty(layout.subject.y)
-    const ex = tx(node.x)
-    const ey = ty(node.y)
-    const dx = ex - sx
-    const dy = ey - sy
+    const dx = node.x - layout.subject.x
+    const dy = node.y - layout.subject.y
     const length = Math.hypot(dx, dy) || 1
-    const startX = sx + (dx / length) * tr(layout.subject.radius + 4)
-    const startY = sy + (dy / length) * tr(layout.subject.radius + 4)
-    const endX = ex - (dx / length) * tr(node.radius + 5)
-    const endY = ey - (dy / length) * tr(node.radius + 5)
+    const sx = layout.subject.x + (dx / length) * (layout.subject.r + 8)
+    const sy = layout.subject.y + (dy / length) * (layout.subject.r + 8)
+    const ex = node.x - (dx / length) * (node.r + 8)
+    const ey = node.y - (dy / length) * (node.r + 8)
 
     ctx.save()
-    ctx.strokeStyle = node.primary ? "#1f7898" : "#111827"
-    ctx.globalAlpha = node.primary ? 0.8 : 0.42
-    ctx.lineWidth = node.primary ? 2.4 : 1.8
+    ctx.strokeStyle = node.primary ? "rgba(31,120,152,0.86)" : "rgba(17,24,39,0.38)"
+    ctx.lineWidth = node.primary ? 2.5 : 1.7
     ctx.beginPath()
-    ctx.moveTo(startX, startY)
-    ctx.lineTo(endX, endY)
+    ctx.moveTo(sx, sy)
+    ctx.lineTo(ex, ey)
     ctx.stroke()
     ctx.restore()
   }
 
-  const drawNode = (node: DrawNode, kind: "subject" | "career") => {
-    const x = tx(node.x)
-    const y = ty(node.y)
-    const r = tr(node.radius)
-
+  const drawNode = (node: GraphNode, type: "subject" | "career") => {
     ctx.save()
-    ctx.shadowColor = "rgba(15, 23, 42, 0.16)"
-    ctx.shadowBlur = 18 * scale
-    ctx.shadowOffsetY = 8 * scale
-    ctx.fillStyle = kind === "subject" ? "#ffffff" : node.primary ? "#edf8fc" : "#fffdf8"
-    ctx.strokeStyle = kind === "subject" ? "#111827" : node.primary ? "#1f7898" : "#111827"
-    ctx.lineWidth = kind === "subject" ? Math.max(3, 4 * scale) : Math.max(1.4, 1.7 * scale)
+    ctx.shadowColor = "rgba(15,23,42,0.15)"
+    ctx.shadowBlur = 20
+    ctx.shadowOffsetY = 8
+    ctx.fillStyle = type === "subject" ? "#ffffff" : node.primary ? "#eef9fc" : "#fffdf8"
+    ctx.strokeStyle = type === "subject" ? "#111827" : node.primary ? "#1f7898" : "#111827"
+    ctx.lineWidth = type === "subject" ? 4 : 1.8
     ctx.beginPath()
-    ctx.arc(x, y, r, 0, Math.PI * 2)
+    ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2)
     ctx.fill()
     ctx.stroke()
     ctx.restore()
@@ -217,21 +210,22 @@ function drawCareerMap(
     ctx.save()
     ctx.textAlign = "center"
     ctx.textBaseline = "middle"
-    ctx.fillStyle = kind === "subject" ? "#111827" : node.primary ? "#1f7898" : "#111827"
-    ctx.font = `900 ${Math.max(10, 12 * scale)}px ui-sans-serif, system-ui, -apple-system, Segoe UI`
-    if (kind === "subject") {
-      ctx.fillText("YOU", x, y - 4 * scale)
-      ctx.font = `600 ${Math.max(8, 9 * scale)}px ui-sans-serif, system-ui`
-      ctx.fillStyle = "rgba(17,24,39,0.55)"
-      ctx.fillText(node.subtitle.slice(0, 16), x, y + 12 * scale)
-    } else {
-      ctx.fillText(node.subtitle, x, y - 11 * scale)
-      ctx.font = `900 ${Math.max(8, 9 * scale)}px ui-sans-serif, system-ui, -apple-system, Segoe UI`
+    if (type === "subject") {
       ctx.fillStyle = "#111827"
-      const lines = wrapText(ctx, node.label.toUpperCase(), r * 1.42, expanded ? 3 : 2)
-      const lineHeight = 10 * scale
-      const start = y + 7 * scale - ((lines.length - 1) * lineHeight) / 2
-      lines.forEach((line, index) => ctx.fillText(line, x, start + index * lineHeight))
+      ctx.font = "900 13px ui-sans-serif, system-ui, -apple-system, Segoe UI"
+      ctx.fillText("YOU", node.x, node.y - 5)
+      ctx.font = "600 10px ui-sans-serif, system-ui"
+      ctx.fillStyle = "rgba(17,24,39,0.55)"
+      ctx.fillText(truncate(node.subtitle, 16), node.x, node.y + 13)
+    } else {
+      ctx.fillStyle = node.primary ? "#1f7898" : "rgba(17,24,39,0.62)"
+      ctx.font = "900 11px ui-sans-serif, system-ui, -apple-system, Segoe UI"
+      ctx.fillText(node.subtitle, node.x, node.y - 13)
+      ctx.fillStyle = "#111827"
+      ctx.font = "900 9px ui-sans-serif, system-ui, -apple-system, Segoe UI"
+      const lines = wrapText(ctx, node.label.toUpperCase(), node.r * 1.45, expanded ? 3 : 2)
+      const startY = node.y + 7 - ((lines.length - 1) * 10) / 2
+      lines.forEach((line, index) => ctx.fillText(line, node.x, startY + index * 10))
     }
     ctx.restore()
   }
@@ -240,47 +234,35 @@ function drawCareerMap(
   layout.careers.forEach((node) => drawNode(node, "career"))
 
   ctx.save()
-  ctx.fillStyle = "rgba(17, 24, 39, 0.32)"
-  ctx.font = `900 ${Math.max(10, 12 * scale)}px ui-sans-serif, system-ui`
-  ctx.fillText("NEURAL MATCH", tx(78), ty(82))
-  ctx.fillText("VECTOR CACHE", tx(940), ty(355))
+  ctx.fillStyle = "rgba(17,24,39,0.34)"
+  ctx.font = "900 11px ui-sans-serif, system-ui"
+  ctx.fillText("NEURAL_MATCH", gridLeft + 24, gridTop + 36)
+  ctx.fillText("VECTOR_CACHE", gridRight - 160, gridTop + 54)
   ctx.fillStyle = "#000"
-  ctx.font = `900 ${Math.max(13, 18 * scale)}px ui-monospace, SFMono-Regular, Menlo, monospace`
-  ctx.fillText("SIGNAL_GRAPH // 0x42", tx(70), ty(455))
-  ctx.fillStyle = "rgba(0,0,0,0.62)"
-  ctx.font = `500 ${Math.max(10, 14 * scale)}px ui-sans-serif, system-ui`
-  ctx.fillText("Career path centroids generated from profile signals", tx(70), ty(482))
+  ctx.font = "900 16px ui-monospace, SFMono-Regular, Menlo, monospace"
+  ctx.fillText("SIGNAL_GRAPH // 0x42", gridLeft + 22, gridBottom - 52)
+  ctx.fillStyle = "rgba(0,0,0,0.58)"
+  ctx.font = "500 13px ui-sans-serif, system-ui"
+  ctx.fillText("Career paths mapped from profile signals", gridLeft + 22, gridBottom - 28)
   ctx.restore()
 }
 
 function GraphCanvas({ simulation, expanded = false }: { simulation: Simulation; expanded?: boolean }) {
   const router = useRouter()
-  const layout = useMemo(() => makeLayout(simulation, expanded), [simulation, expanded])
-  const { ref, size } = useMeasuredSize<HTMLDivElement>(expanded)
+  const { ref, size } = useCanvasSize<HTMLDivElement>(expanded)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const layout = useMemo(() => buildLayout(simulation, size, expanded), [simulation, size, expanded])
 
   useEffect(() => {
-    drawCareerMap(canvasRef.current, layout, size, expanded)
+    drawMap(canvasRef.current, layout, size, expanded)
   }, [layout, size, expanded])
 
   const handleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const rect = canvas.getBoundingClientRect()
-    const px = event.clientX - rect.left
-    const py = event.clientY - rect.top
-    const scale = Math.min(size.width / DESIGN_WIDTH, size.height / DESIGN_HEIGHT)
-    const offsetX = (size.width - DESIGN_WIDTH * scale) / 2
-    const offsetY = (size.height - DESIGN_HEIGHT * scale) / 2
-    const toScreen = (node: DrawNode) => ({
-      x: offsetX + node.x * scale,
-      y: offsetY + node.y * scale,
-      r: node.radius * scale,
-    })
-
+    const rect = event.currentTarget.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
     for (const node of layout.careers) {
-      const p = toScreen(node)
-      if (Math.hypot(px - p.x, py - p.y) <= p.r + 10) {
+      if (Math.hypot(x - node.x, y - node.y) <= node.r + 12) {
         router.push(`/career/${simulation.simulation_id}/${node.career?.career_id}`)
         return
       }
@@ -292,7 +274,7 @@ function GraphCanvas({ simulation, expanded = false }: { simulation: Simulation;
       ref={ref}
       className={cn(
         "relative w-full overflow-hidden rounded-[1.75rem] border border-black/80 bg-white",
-        expanded ? "h-[min(78vh,760px)]" : "h-[430px]"
+        expanded ? "h-[min(76vh,720px)]" : "h-[380px] md:h-[420px]",
       )}
     >
       <canvas
