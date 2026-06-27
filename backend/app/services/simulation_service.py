@@ -355,8 +355,8 @@ class SimulationService:
                 {"day": 1, "title": "Signal Mapping", "task": "Identify high-friction problems in the current domain landscape.", "deliverable": "Problem Vector List"},
                 {"day": 2, "title": "Logic Synthesis", "task": "Convert domain problems into a single solvable mission.", "deliverable": "Mission Statement"},
                 {"day": 3, "title": "System Architecture", "task": "Design the technical and AI-assisted flow for the solution.", "deliverable": "Workflow Schematic"},
-                {"day": 4, "title": "MVP Prototype", "task": "Build the core proof-of-concept for your mission.", "deliverable": "Working Prototype"},
-                {"day": 5, "title": "AI-Native Layer", "task": "Integrate LLM/automation vectors into the MVP.", "deliverable": "Augmented V1.0"},
+                {"day": 4, "title": "Prototype Build", "task": "Build the core proof-of-concept for your mission.", "deliverable": "Working Prototype"},
+                {"day": 5, "title": "AI-Native Layer", "task": "Integrate AI-assisted workflows into the prototype.", "deliverable": "Augmented V1.0"},
                 {"day": 6, "title": "User Feedback", "task": "Capture signal from 3 real-world testers.", "deliverable": "Feedback Data"},
                 {"day": 7, "title": "Final Commit", "task": "Package and present the case study of your discovery.", "deliverable": "Strategy Brief"},
             ]

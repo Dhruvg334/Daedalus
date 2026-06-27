@@ -23,15 +23,15 @@ class OpportunityService:
             },
             {
                 "id": "opp_2",
-                "title": "UX Design Hackathon",
+                "title": "UX Design Challenge",
                 "organization": "CreativeFlow",
                 "location": "Online",
-                "type": "hackathon",
+                "type": "competition",
                 "deadline": "2024-11-15",
                 "requirements": ["Figma", "Prototyping"],
                 "difficulty": "intermediate",
                 "source": "Devpost",
-                "apply_url": "https://example.com/hack",
+                "apply_url": "https://example.com/challenge",
                 "relevance_score": 0.88,
                 "career_ids": ["ai_product_designer"]
             },

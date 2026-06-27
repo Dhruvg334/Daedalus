@@ -1,82 +1,58 @@
 # Daedalus Architecture
 
-## High-Level Flow
+Daedalus is split into a public Next.js frontend and a private FastAPI backend. The frontend owns the product experience. The backend owns structured career simulation, supporting data, progress state, and optional assistant responses.
 
-```text
-User profile input
-  ↓
-Next.js onboarding / demo persona flow
-  ↓
-FastAPI simulation endpoint
-  ↓
-Profile normalization
-  ↓
-Career dataset + scoring logic
-  ↓
-Structured simulation response
-  ↓
-Dashboard, comparison, skills, sprint, learning, opportunities, trace, share
+## High-Level System
+
+```mermaid
+flowchart LR
+    U[User] --> FE[Next.js Frontend]
+    FE --> API[FastAPI Backend]
+    API --> N[Profile Normalizer]
+    N --> C[Career Library]
+    C --> S[Scoring Engine]
+    S --> R[Simulation Response]
+    R --> FE
+    FE --> LS[Browser Local Storage]
 ```
 
-## Frontend Architecture
-
-The frontend is a Next.js App Router application.
-
-Key areas:
+## Frontend Responsibilities
 
 | Area | Location | Purpose |
 |---|---|---|
-| Landing | `frontend/app/page.tsx` | Product entry and resume-dashboard CTA |
-| Onboarding | `frontend/app/onboarding/page.tsx` | Profile collection and validation |
-| Loading | `frontend/app/loading/page.tsx` | Runs simulation request and saves result |
-| Dashboard | `frontend/app/dashboard/[simulationId]/page.tsx` | Main career operating system view |
-| Detail pages | `frontend/app/*/[simulationId]/page.tsx` | Skills, sprint, learning, opportunities, trace, share |
-| API client | `frontend/lib/api.ts` | Centralized backend communication |
-| Local state | `frontend/lib/simulation-store.ts` | Stores active simulations in localStorage |
-| Shared types | `frontend/lib/types.ts` | Frontend-side API/data contracts |
+| Landing | `frontend/app/page.tsx` | Product entry and continue-dashboard CTA |
+| Onboarding | `frontend/app/onboarding/page.tsx` | Profile capture and validation |
+| Loading | `frontend/app/loading/page.tsx` | Runs simulation, retries transient backend issues, saves result |
+| Dashboard | `frontend/app/dashboard/[simulationId]/page.tsx` | Main career operating view |
+| Detail modules | `frontend/app/*/[simulationId]/page.tsx` | Career detail, comparison, skills, sprint, learning, opportunities, trace, share |
+| API client | `frontend/lib/api.ts` | Central backend communication and error normalization |
+| Local state | `frontend/lib/simulation-store.ts` | Latest simulation persistence in the browser |
 
-## Backend Architecture
-
-The backend is a FastAPI service.
-
-Key areas:
+## Backend Responsibilities
 
 | Area | Location | Purpose |
 |---|---|---|
-| App entry | `backend/app/main.py` | FastAPI app, CORS, routers, error handling |
-| Vercel entry | `backend/index.py` | Exposes FastAPI app for Vercel Python runtime |
-| Schemas | `backend/app/schemas/` | Pydantic request/response contracts |
-| Services | `backend/app/services/` | Simulation, assistant, learning, opportunities |
-| Models | `backend/app/models/` | SQLAlchemy tables |
-| Database | `backend/app/core/database.py` | SQLite engine and session management |
-| API routes | `backend/app/api/v1/` | Versioned HTTP endpoints |
+| App entry | `backend/app/main.py` | FastAPI app, CORS, routers, stable error handling |
+| Schemas | `backend/app/schemas/` | Pydantic contracts |
+| Simulation service | `backend/app/services/simulation_service.py` | Career ranking, skill mapping, action sprint, trace |
+| Assistant service | `backend/app/services/ai_service.py` | Optional Gemini-backed assistant with offline fallback |
+| Hubs | `backend/app/services/learning_service.py`, `opportunity_service.py` | Learning and opportunity recommendations |
+| Persistence | `backend/app/core/database.py` | SQLite-backed supporting state |
 
-## Critical Integration Decision
+## Primary Contract
 
-The main product is centered on one primary endpoint:
+The central contract is:
 
 ```http
 POST /api/v1/simulate
 ```
 
-This endpoint returns the simulation object used by most frontend pages. That keeps the frontend/backend contract stable and avoids feature fragmentation.
+It returns the simulation object consumed by the dashboard and all detail modules. This keeps the product predictable and reduces frontend/backend drift.
 
-## Persistence Strategy
+## Reliability Decisions
 
-Current version:
-
-- Frontend stores the active simulation in localStorage.
-- Backend can cache/fetch simulations during active runtime.
-- SQLite is used for supporting data such as progress/feedback where applicable.
-
-Production-grade future version:
-
-- Replace local SQLite with Postgres/Supabase/Neon.
-- Store simulations durably by user/session.
-- Add auth only after the core product flow remains stable.
-
-## Performance Notes
-
-The landing animation is lazy-loaded and uses a CSS fallback first. This avoids blocking the first page render on WebGL-heavy visual effects.
-
-The dashboard renders the simulation first and hydrates optional learning/opportunity modules afterward. This avoids blocking the main user result on secondary modules.
+- Frontend retries transient backend failures once.
+- Loading screen keeps users in place and offers recovery actions instead of resetting them.
+- Assistant failures return graceful messages rather than breaking the dashboard.
+- Production backend errors do not expose internal exception details.
+- Browser localStorage keeps the latest simulation available for the continue-dashboard flow.

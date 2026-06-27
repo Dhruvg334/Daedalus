@@ -87,7 +87,7 @@ export default function OpportunityHubPage() {
               </div>
               <h1 className="text-4xl font-extrabold tracking-tight mb-3">Career Opportunity Hub</h1>
               <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                Real-world internships, hackathons, and projects curated for your
+                Real-world internships, competitions, and projects curated for your
                 <span className="text-primary font-bold"> {data?.career_paths[0].title}</span> path.
               </p>
             </div>

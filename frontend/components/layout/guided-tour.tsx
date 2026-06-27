@@ -40,7 +40,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     targetId: "opportunity-hub",
     title: "Opportunity Engine",
-    content: "Discover real-world internships, hackathons, and projects tailored specifically to your chosen path.",
+    content: "Discover real-world internships, competitions, and projects tailored specifically to your chosen path.",
     icon: Briefcase,
     position: "right"
   },

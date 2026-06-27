@@ -1,50 +1,32 @@
 # Daedalus Deployment Guide
 
-## Recommended Deployment Shape
+## Current Deployment Shape
 
-Deploy frontend and backend as two separate projects.
-
-| Service | Recommended host | Root directory |
+| Service | Platform | Root Directory |
 |---|---|---|
 | Frontend | Vercel | `frontend` |
-| Backend | Vercel Python / Render / Railway | `backend` |
+| Backend | Render | `backend` |
 
-Deploy backend first, then frontend.
+The public product is accessed through the frontend. The backend is consumed by the frontend and is not listed publicly in the README.
 
----
+## Backend on Render
 
-## Backend Deployment
-
-### Vercel Backend Settings
-
-Import the same GitHub repo and use:
+Recommended settings:
 
 | Setting | Value |
 |---|---|
-| Project name | `daedalus-backend` |
+| Runtime | Python 3 |
 | Root Directory | `backend` |
-| Framework Preset | Other / Python |
-| Build Command | leave empty unless Vercel requires default |
-| Install Command | `pip install -r requirements.txt` |
-| Output Directory | leave empty |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+| Health Check Path | `/api/v1/health` |
 
-The backend includes:
-
-```text
-backend/index.py
-backend/vercel.json
-```
-
-These expose the FastAPI app for Vercel's Python runtime.
-
-### Backend Environment Variables
+Environment variables:
 
 ```env
-PROJECT_NAME=Daedalus API
-VERSION=1.0.0
-API_V1_STR=/api/v1
+PYTHON_VERSION=3.12.8
 ENVIRONMENT=production
-ALLOWED_ORIGINS=https://<frontend-domain>.vercel.app
+ALLOWED_ORIGINS=https://daedalus-iota.vercel.app
 LOG_LEVEL=info
 ```
 
@@ -54,70 +36,34 @@ Optional:
 GOOGLE_API_KEY=<your-key>
 ```
 
-First health test:
+If the backend appears unavailable after a quiet period, open the health endpoint once to wake the service, then retry the frontend flow.
 
-```text
-https://<backend-domain>.vercel.app/api/v1/health
-```
+## Frontend on Vercel
 
-Expected:
-
-```json
-{
-  "success": true,
-  "status": "ok"
-}
-```
-
----
-
-## Frontend Deployment
-
-### Vercel Frontend Settings
-
-Import the same GitHub repo again and use:
+Recommended settings:
 
 | Setting | Value |
 |---|---|
-| Project name | `daedalus` |
+| Framework | Next.js |
 | Root Directory | `frontend` |
-| Framework Preset | Next.js |
 | Install Command | `npm install` |
 | Build Command | `npm run build` |
-| Output Directory | leave empty/default |
+| Output Directory | Leave empty |
 
-For Next.js, do not set Output Directory to `out` unless static export has explicitly been configured. This app should use Vercel's default `.next` output.
-
-### Frontend Environment Variables
+Environment variable:
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=https://<backend-domain>.vercel.app
+NEXT_PUBLIC_API_BASE_URL=<private-render-backend-url>
 ```
 
-Redeploy the frontend after adding this variable.
+Do not add a trailing slash to the backend URL.
 
----
+## Production Verification
 
-## Deployment Test Order
+Test in this order:
 
-1. Open backend health URL.
-2. Open frontend URL.
-3. Run demo persona flow.
-4. Confirm dashboard loads.
-5. Open Career Detail.
-6. Open Skills.
-7. Open Learning.
-8. Open Opportunities.
-9. Open Sprint.
-10. Open Trace.
-11. Open Share.
-12. Return home and confirm Continue Dashboard appears.
+```text
+Home → Demo Personas → Loading → Dashboard → Career Detail → Skills → Learning → Opportunities → Sprint → Trace → Share → Home → Continue
+```
 
----
-
-## Known Deployment Notes
-
-- Current backend uses SQLite; in production/serverless, database path falls back to `/tmp/daedalus.db`.
-- Serverless `/tmp` is ephemeral. Do not treat it as durable persistence.
-- Frontend localStorage restores the user's latest simulation for the current browser.
-- Durable multi-user persistence should be added with Postgres/Supabase/Neon later.
+Then test manual onboarding with a minimal valid profile.

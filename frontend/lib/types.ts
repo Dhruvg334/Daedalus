@@ -221,7 +221,7 @@ export type Opportunity = {
   title: string;
   organization: string;
   location: string;
-  type: "internship" | "job" | "freelance" | "hackathon" | "open_source" | "competition";
+  type: "internship" | "job" | "freelance" | "open_source" | "competition";
   salary_stipend?: string;
   deadline?: string;
   requirements: string[];

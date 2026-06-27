@@ -1,236 +1,183 @@
+<div align="center">
+
 # Daedalus
 
-**Daedalus** is an AI-powered career navigation platform that helps users compare future career paths, understand skill gaps, analyze AI exposure, and turn career uncertainty into a practical action plan.
+**AI-powered career navigation for clearer future decisions.**
 
-It is built as a structured career decision system rather than a generic chatbot. A user completes a guided profile, Daedalus generates a career simulation, and the product presents the result through a dashboard, comparison layer, learning roadmap, opportunity hub, 7-day sprint, and traceable recommendation pipeline.
+Daedalus helps users compare future career paths, understand skill gaps, evaluate AI exposure, and convert career uncertainty into a practical action plan.
 
-**Live product:** https://daedalus-iota.vercel.app/
+[Live Product](https://daedalus-iota.vercel.app/)
+
+</div>
 
 ---
 
-## Product Overview
+## Overview
+
+Daedalus is a structured career decision platform. A user completes a guided profile, receives a personalized career simulation, and explores the result through a dashboard, career comparison layer, learning roadmap, opportunity hub, 7-day sprint, and traceable recommendation pipeline.
+
+The product is deliberately **not** a generic chatbot. The core experience is built around structured data, deterministic scoring, explainable recommendations, and an interface that helps users move from uncertainty to action.
+
+---
+
+## Product Snapshot
 
 | Area | Details |
 |---|---|
 | Product type | AI career navigation and decision platform |
 | Core users | Students and early professionals exploring AI-era career paths |
-| Main outcome | Personalized career options, skill gaps, AI exposure, roadmap, and sprint plan |
+| Main outcome | Personalized career options, skill gaps, AI exposure analysis, roadmap, and sprint plan |
 | Frontend | Next.js, React, Tailwind CSS, Radix UI, Framer Motion |
 | Backend | FastAPI, Pydantic, SQLAlchemy, SQLite, optional Gemini assistant |
-| Deployment | Frontend on Vercel; backend deployed as a private FastAPI service |
-| Current status | End-to-end MVP deployed and working |
+| Deployment | Frontend on Vercel; backend deployed as a private Python/FastAPI service |
+| Live product | https://daedalus-iota.vercel.app/ |
 
 ---
 
-## Why Daedalus Exists
+## Core Capabilities
 
-Career planning is fragmented. Users often move between career quizzes, resume tools, interview platforms, learning sites, job boards, and generic AI chatbots without getting a clear decision path.
-
-Daedalus brings the core decision workflow into one product:
-
-```text
-Who am I?
-What paths fit me?
-How is AI changing those paths?
-What skills am I missing?
-What should I do this week?
-```
-
-The product does not claim to choose a user's future. It helps users compare realistic options, understand tradeoffs, and take the next step.
-
----
-
-## Key Capabilities
-
-| Capability | Description |
+| Capability | What it does |
 |---|---|
-| Guided profile onboarding | Captures interests, skills, work style, concerns, goals, and availability |
-| Demo personas | Lets users explore the product instantly with predefined profiles |
-| Career simulation | Generates three recommended career paths with scoring and rationale |
-| Career dashboard | Presents fit, confidence, difficulty, growth, and AI exposure signals |
-| Career detail pages | Explains why a path fits, what the work involves, and where AI assists |
-| Comparison matrix | Compares recommended paths side by side |
-| Skill map | Identifies matched skills, missing skills, and priority gaps |
-| Learning hub | Recommends learning directions and resources for selected paths |
-| Opportunity hub | Suggests relevant opportunities and exploration areas |
-| 7-day action sprint | Converts guidance into daily tasks and deliverables |
-| Progress tracking | Tracks sprint progress locally |
-| Trace view | Shows the recommendation pipeline for explainability |
-| Share page | Creates a clean summary of the user's career map |
-| Assistant drawer | Optional assistant support with safe fallback when no AI key is configured |
-| Resume dashboard flow | Lets returning users continue from their previous dashboard |
+| Guided onboarding | Captures interests, skills, work style, concerns, goals, and availability |
+| Demo persona flow | Lets users explore the product instantly through preset profiles |
+| Career simulation | Generates three recommended paths with fit, confidence, difficulty, growth, and AI exposure signals |
+| Career dashboard | Presents the complete recommendation system through an interactive operating view |
+| Career details | Breaks down path fit, required skills, human advantage, and AI exposure by task |
+| Comparison matrix | Helps users compare recommended paths side by side |
+| Skill map | Shows current strengths and priority skill gaps |
+| Learning hub | Recommends learning resources for the selected career path |
+| Opportunity hub | Surfaces relevant internships, competitions, and project opportunities |
+| 7-day sprint | Converts the recommendation into an immediate action plan |
+| Trace view | Explains the recommendation pipeline and scoring logic |
+| Share page | Creates a clean summary of the user’s career map |
+| Resume flow | Lets returning users continue their most recent dashboard from the home page |
 
 ---
 
 ## System Architecture
 
 ```mermaid
-flowchart TB
-    User["User"] --> Frontend["Next.js Frontend"]
-
-    subgraph Client["Client Layer"]
-        Frontend --> Onboarding["Onboarding Flow"]
-        Frontend --> DemoPersonas["Demo Persona Flow"]
-        Frontend --> Dashboard["Career Dashboard"]
-        Frontend --> LocalStorage["Local Dashboard Resume State"]
-    end
-
-    subgraph Backend["FastAPI Backend"]
-        API["API Router"] --> Simulate["Simulation Service"]
-        API --> Hubs["Learning and Opportunity Hubs"]
-        API --> Progress["Progress Service"]
-        API --> Assistant["Assistant Service"]
-        Simulate --> Scoring["Career Scoring Engine"]
-        Simulate --> Dataset["Career Knowledge Dataset"]
-        Simulate --> Trace["Trace Builder"]
-        Assistant --> OptionalLLM["Optional Gemini Integration"]
-    end
-
-    Onboarding --> API
-    DemoPersonas --> API
-    Dashboard --> API
-    API --> Response["Structured JSON Response"]
-    Response --> Dashboard
-    Dashboard --> LocalStorage
+flowchart LR
+    A[User Profile Input] --> B[Next.js Frontend]
+    B --> C[Central API Client]
+    C --> D[FastAPI Backend]
+    D --> E[Profile Normalization]
+    E --> F[Career Library]
+    F --> G[Scoring Engine]
+    G --> H[Simulation Builder]
+    H --> I[Structured Simulation JSON]
+    I --> J[Dashboard and Detail Pages]
+    I --> K[Skills, Learning, Opportunities]
+    I --> L[Sprint, Trace, Share]
 ```
 
 ---
 
-## Career Simulation Workflow
+## Recommendation Workflow
 
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant FE as Frontend
-    participant BE as FastAPI Backend
-    participant SE as Simulation Engine
-    participant DS as Career Dataset
-    participant UI as Dashboard
+    participant FE as Next.js Frontend
+    participant API as FastAPI Backend
+    participant Engine as Simulation Engine
+    participant Store as Browser Storage
 
-    U->>FE: Completes onboarding or selects demo persona
-    FE->>BE: POST /api/v1/simulate
-    BE->>SE: Normalize profile and start simulation
-    SE->>DS: Match profile against career clusters
-    SE->>SE: Score fit, difficulty, growth, and AI exposure
-    SE->>SE: Build skill gaps, sprint, and trace
-    SE-->>BE: Structured simulation result
-    BE-->>FE: Career simulation JSON
-    FE->>UI: Render dashboard, detail pages, sprint, trace, and share view
+    U->>FE: Completes onboarding or selects persona
+    FE->>API: POST /api/v1/simulate
+    API->>Engine: Normalize profile and rank careers
+    Engine->>Engine: Score fit, gaps, risk, AI exposure
+    Engine-->>API: Structured simulation object
+    API-->>FE: Career simulation response
+    FE->>Store: Save latest simulation locally
+    FE-->>U: Show dashboard, roadmap, sprint, and trace
 ```
 
 ---
 
-## Recommendation Pipeline
-
-```mermaid
-flowchart LR
-    A["Profile Input"] --> B["Profile Normalization"]
-    B --> C["Career Cluster Matching"]
-    C --> D["Fit Scoring"]
-    D --> E["AI Exposure Analysis"]
-    E --> F["Skill Gap Mapping"]
-    F --> G["Learning Roadmap"]
-    G --> H["7-Day Sprint"]
-    H --> I["Trace and Explanation Layer"]
-    I --> J["Dashboard Output"]
-```
-
----
-
-## Main User Flow
-
-```mermaid
-flowchart TD
-    Home["Home"] --> Choice{"Start point"}
-    Choice --> Onboarding["Guided Onboarding"]
-    Choice --> Personas["Demo Personas"]
-    Onboarding --> Loading["Simulation Loading"]
-    Personas --> Loading
-    Loading --> Dashboard["Career Dashboard"]
-    Dashboard --> Detail["Career Detail"]
-    Dashboard --> Compare["Comparison"]
-    Dashboard --> Skills["Skill Map"]
-    Dashboard --> Learning["Learning Hub"]
-    Dashboard --> Opportunities["Opportunity Hub"]
-    Dashboard --> Sprint["7-Day Sprint"]
-    Dashboard --> Trace["Trace View"]
-    Dashboard --> Share["Share Page"]
-    Home --> Continue["Continue Previous Dashboard"]
-    Continue --> Dashboard
-```
-
-Recommended product demo path:
+## Frontend Structure
 
 ```text
-Home → Demo Personas → Select Persona → Loading → Dashboard → Sprint → Trace → Share
+frontend/
+├── app/                         # Next.js App Router pages
+│   ├── page.tsx                 # Landing page
+│   ├── onboarding/              # Guided profile flow
+│   ├── loading/                 # Simulation execution state
+│   ├── dashboard/[simulationId] # Main career dashboard
+│   ├── career/[simulationId]    # Career detail view
+│   ├── comparison/[simulationId]
+│   ├── skills/[simulationId]
+│   ├── learning/[simulationId]
+│   ├── opportunities/[simulationId]
+│   ├── sprint/[simulationId]
+│   ├── trace/[simulationId]
+│   └── share/[simulationId]
+├── components/                  # Reusable UI and intelligence components
+├── lib/api.ts                   # Centralized backend API client
+├── lib/simulation-store.ts      # Local simulation persistence
+└── lib/types.ts                 # Frontend contracts
 ```
 
 ---
 
-## Repository Structure
+## Backend Structure
 
 ```text
-Daedalus/
-├── frontend/              # Next.js application
-│   ├── app/               # App Router pages and routes
-│   ├── components/        # UI, layout, dashboard, and feature components
-│   ├── lib/               # API client, types, helpers, local storage utilities
-│   └── package.json
-│
-├── backend/               # FastAPI service
-│   ├── app/
-│   │   ├── api/           # API routes
-│   │   ├── core/          # Settings and infrastructure config
-│   │   ├── schemas/       # Pydantic request/response schemas
-│   │   └── services/      # Simulation, hubs, assistant, and progress logic
-│   ├── requirements.txt
-│   └── runtime config
-│
-├── docs/                  # Architecture, API, deployment, and testing notes
-├── README.md
-└── .gitignore
+backend/
+├── app/
+│   ├── main.py                  # FastAPI app, CORS, routers, error handling
+│   ├── api/v1/                  # Versioned API routes
+│   ├── schemas/                 # Pydantic request/response contracts
+│   ├── services/                # Simulation, assistant, learning, opportunity logic
+│   ├── models/                  # SQLAlchemy models
+│   ├── repositories/            # Persistence helpers
+│   └── core/                    # Config, database, security helpers
+├── requirements.txt
+└── runtime.txt / .python-version where configured for deployment
 ```
 
 ---
 
 ## API Surface
 
-The backend URL is intentionally not listed publicly. The frontend communicates with the backend through `NEXT_PUBLIC_API_BASE_URL`.
+The frontend talks to the backend through a small set of stable endpoints.
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| `GET` | `/api/v1/health` | Backend health check |
-| `GET` | `/api/v1/demo-personas` | Preset user profiles |
-| `POST` | `/api/v1/simulate` | Generate career simulation |
-| `GET` | `/api/v1/simulations/{simulation_id}` | Fetch cached simulation |
-| `POST` | `/api/v1/hubs/opportunities` | Opportunity recommendations |
-| `GET` | `/api/v1/hubs/learning-path/{career_id}` | Learning resources |
-| `GET` | `/api/v1/progress/{simulation_id}` | Fetch progress state |
-| `POST` | `/api/v1/progress/update` | Update sprint progress |
-| `POST` | `/api/v1/assistant/chat` | Optional assistant chat |
-| `POST` | `/api/v1/assistant/automate` | Optional generated assets |
-| `POST` | `/api/v1/feedback` | Capture feedback |
+| GET | `/api/v1/health` | Service health check |
+| GET | `/api/v1/demo-personas` | Preset profile library |
+| POST | `/api/v1/simulate` | Main career simulation |
+| GET | `/api/v1/simulations/{simulation_id}` | Retrieve cached simulation when available |
+| POST | `/api/v1/hubs/opportunities` | Opportunity recommendations |
+| GET | `/api/v1/hubs/learning-path/{career_id}` | Learning resources |
+| GET | `/api/v1/progress/{simulation_id}` | Progress state |
+| POST | `/api/v1/progress/update` | Update progress |
+| POST | `/api/v1/assistant/chat` | Optional assistant chat |
+| POST | `/api/v1/assistant/automate` | Optional generated assets |
+| POST | `/api/v1/feedback` | Feedback capture |
 
-See `docs/API_CONTRACTS.md` for request and response shapes.
+The backend endpoint is intentionally not listed here. The deployed product should be accessed through the live frontend.
+
+---
+
+## Error Handling and Reliability
+
+Daedalus includes several reliability safeguards:
+
+- The frontend API client normalizes backend errors into readable user messages.
+- Simulation requests retry once before showing a recovery state.
+- The loading screen no longer resets users back to onboarding after a transient backend issue.
+- The assistant returns a graceful fallback if Gemini is not configured or temporarily unavailable.
+- Backend internal errors return a stable JSON shape instead of leaking stack traces in production.
+- The dashboard stores the active simulation locally so returning users can continue from the landing page.
 
 ---
 
 ## Local Setup
 
-### Prerequisites
+### Backend
 
-| Tool | Recommended version |
-|---|---|
-| Node.js | 20.x or later |
-| npm | Latest stable |
-| Python | 3.11 or 3.12 |
-| Git | Latest stable |
-
-Avoid Python 3.14 for the backend because some compiled Python dependencies may not support it cleanly yet.
-
----
-
-### Backend Setup
+Use Python 3.11 or 3.12.
 
 ```bash
 cd backend
@@ -279,9 +226,7 @@ Health check:
 http://localhost:8000/api/v1/health
 ```
 
----
-
-### Frontend Setup
+### Frontend
 
 ```bash
 cd frontend
@@ -298,12 +243,6 @@ Windows CMD:
 
 ```cmd
 copy .env.example .env.local
-```
-
-Set local API base URL:
-
-```env
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
 
 Run frontend:
@@ -328,8 +267,6 @@ http://localhost:3000
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
 
-For production, set this in the hosting dashboard to the deployed backend service URL. The backend URL is not published in this README.
-
 ### Backend
 
 ```env
@@ -347,7 +284,31 @@ Optional:
 GOOGLE_API_KEY=<your-key>
 ```
 
-If `GOOGLE_API_KEY` is absent, the assistant uses safe fallback responses and the core product flow still works.
+If `GOOGLE_API_KEY` is absent, the assistant uses fallback responses and the core product flow remains available.
+
+---
+
+## Main Product Flow
+
+```mermaid
+flowchart TD
+    A[Landing Page] --> B{Entry Point}
+    B --> C[Guided Onboarding]
+    B --> D[Demo Personas]
+    C --> E[Loading and Simulation]
+    D --> E
+    E --> F[Career Dashboard]
+    F --> G[Career Detail]
+    F --> H[Comparison]
+    F --> I[Skills]
+    F --> J[Learning]
+    F --> K[Opportunities]
+    F --> L[7-Day Sprint]
+    F --> M[Trace]
+    F --> N[Share]
+    N --> O[Return Home]
+    O --> P[Continue Dashboard]
+```
 
 ---
 
@@ -360,119 +321,58 @@ cd frontend
 npm run build
 ```
 
-Backend smoke test:
+Backend checks:
 
 ```bash
 cd backend
+python -m compileall app
 python scripts/test_api_flow.py
 ```
 
-Manual test path:
+Manual product flow:
 
 ```text
-Home
-→ Demo Personas
-→ Select Persona
-→ Loading
-→ Dashboard
-→ Career Detail
-→ Skills
-→ Learning
-→ Opportunities
-→ Sprint
-→ Trace
-→ Share
-→ Home
-→ Continue
-```
-
-Manual onboarding test:
-
-```text
-Name: Dhruv
-Interest: AI
-Subject: Computer Science
-Skill: Python
-Work style: Building
-Fear: Automation
-Weekly time: 5-7 hours
+Home → Demo Personas → Loading → Dashboard → Career Detail → Skills → Learning → Opportunities → Sprint → Trace → Share → Home → Continue
 ```
 
 ---
 
 ## Deployment
 
-Current deployment:
+Current deployment shape:
 
-| Layer | Platform |
-|---|---|
-| Frontend | Vercel |
-| Backend | Private FastAPI service |
+| Layer | Platform | Notes |
+|---|---|---|
+| Frontend | Vercel | Public product URL |
+| Backend | Render | Private FastAPI service consumed by the frontend |
 
-Production frontend:
+Frontend production URL:
 
 ```text
 https://daedalus-iota.vercel.app/
 ```
 
-Deployment rule:
+Backend deployment notes:
 
-```text
-Deploy backend first → set NEXT_PUBLIC_API_BASE_URL in frontend → deploy frontend
-```
-
-The backend URL is intentionally not displayed publicly. Treat it as an implementation detail.
-
----
-
-## Design Principles
-
-Daedalus follows four product principles:
-
-| Principle | Meaning |
-|---|---|
-| Structured decisions over generic chat | The product guides users through a decision system, not a loose conversation |
-| Comparison over one-answer certainty | Users see multiple paths and tradeoffs rather than one fake perfect answer |
-| Action over motivation | Every simulation leads to a concrete sprint |
-| Explainability over black box output | Trace view shows how the recommendation was produced |
-
----
-
-## Current Status
-
-Daedalus has a complete end-to-end MVP flow:
-
-- Onboarding
-- Demo profiles
-- Career simulation
-- Dashboard
-- Career detail pages
-- Comparison
-- Skill mapping
-- Learning and opportunity modules
-- Progress tracking
-- 7-day sprint
-- Trace view
-- Share page
-- Dashboard resume flow
-- Live frontend deployment
-
-Current technical limitation:
-
-The backend currently uses lightweight persistence suitable for the MVP. Durable multi-user persistence should be added before a production-grade public release.
+- Python 3.12 is recommended.
+- Render start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- CORS should allow the deployed Vercel frontend domain.
+- The backend URL is not documented publicly to reduce unnecessary direct traffic.
 
 ---
 
 ## Team
 
-| Member | Role |
+| Member | Contribution |
 |---|---|
-| Dhruv Gupta | Integration, deployment, testing, and final product packaging |
-| Akshhaya Isa | Frontend |
-| Pavit Agrawal | Backend |
+| Dhruv Gupta | Product direction, integration, deployment, testing, frontend/backend bug fixing, release packaging |
+| Akshhaya Isa | Frontend implementation and interface development |
+| Pavit Agrawal | Backend implementation and API development |
 
 ---
 
-## License
+## Current Status
 
-License to be decided.
+Daedalus is live with an end-to-end product flow covering onboarding, demo profiles, simulation, dashboard, detail pages, skill mapping, learning and opportunity modules, progress tracking, sprint planning, trace view, and share page.
+
+The current backend uses SQLite and runtime caching where applicable. For a larger multi-user release, persistence should move to a managed database such as Postgres, Supabase, or Neon.

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Check, Loader2, Sparkles } from "lucide-react";
+import { AlertCircle, Check, Loader2, RotateCcw, Sparkles } from "lucide-react";
 import { getDemoPersonas, simulateCareerPaths } from "@/lib/api";
 import { clearPendingProfile, getPendingProfile, saveSimulation } from "@/lib/simulation-store";
 import type { StudentProfileInput } from "@/lib/types";
@@ -23,12 +23,15 @@ function LoadingContent() {
   const searchParams = useSearchParams();
   const [done, setDone] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     const tick = setInterval(() => {
       setDone(p => p.length < STEPS.length ? [...p, p.length] : p);
     }, 600);
+
+    setError(null);
 
     async function run() {
       try {
@@ -55,14 +58,13 @@ function LoadingContent() {
         }, 500);
       } catch (e) {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Something went wrong.");
-        setTimeout(() => router.push("/onboarding"), 2500);
+        setError(e instanceof Error ? e.message : "Daedalus could not complete the simulation. Please try again.");
       } finally { clearInterval(tick); }
     }
 
     run();
     return () => { cancelled = true; clearInterval(tick); };
-  }, [router, searchParams]);
+  }, [router, searchParams, retryNonce]);
 
   const pct = (done.length / STEPS.length) * 100;
 
@@ -92,7 +94,7 @@ function LoadingContent() {
             </div>
 
             <h1 className="text-xl font-bold text-black mb-1">
-              {error ? "Something went wrong" : "Running your simulation"}
+              {error ? "Connection needs attention" : "Running your simulation"}
             </h1>
             <p className="text-sm text-neutral-500 mb-7">
               {error || "Building your personalised career OS…"}
@@ -127,6 +129,35 @@ function LoadingContent() {
                 );
               })}
             </div>
+            {error && (
+              <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-900">Backend service may be waking up</p>
+                    <p className="mt-1 text-xs leading-relaxed text-amber-800">
+                      If this is the first request after a quiet period, the hosted backend can take a moment to respond. Retry once before restarting the profile.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => { setDone([]); setRetryNonce(value => value + 1); }}
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white transition hover:bg-neutral-800"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" /> Retry simulation
+                  </button>
+                  <Link
+                    href="/onboarding"
+                    className="inline-flex items-center justify-center rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-semibold text-neutral-800 transition hover:bg-neutral-50"
+                  >
+                    Edit profile
+                  </Link>
+                </div>
+              </div>
+            )}
+
           </div>
         </motion.div>
       </div>

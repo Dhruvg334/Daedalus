@@ -7,7 +7,7 @@ class Opportunity(BaseModel):
     title: str
     organization: str
     location: str
-    type: Literal["internship", "job", "freelance", "hackathon", "open_source", "competition"]
+    type: Literal["internship", "job", "freelance", "open_source", "competition"]
     salary_stipend: Optional[str] = None
     deadline: Optional[str] = None
     requirements: List[str] = Field(default_factory=list)

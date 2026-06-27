@@ -44,8 +44,11 @@ class AIService:
         User's question: {messages[-1].content}
         """
 
-        response = await self.model.generate_content_async(prompt)
-        return response.text
+        try:
+            response = await self.model.generate_content_async(prompt)
+            return response.text or "The assistant could not generate a response right now. Please try again."
+        except Exception:
+            return "The live assistant is temporarily unavailable. Your career simulation and dashboard remain available."
 
     async def generate_automation(
         self,
@@ -76,8 +79,11 @@ class AIService:
         Format the output clearly using Markdown.
         """
 
-        response = await self.model.generate_content_async(full_prompt)
-        return response.text
+        try:
+            response = await self.model.generate_content_async(full_prompt)
+            return response.text or "The automation output could not be generated right now. Please try again."
+        except Exception:
+            return "This generated asset is temporarily unavailable. Please try again later."
 
     def _build_system_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
         # Minimize tokens by picking relevant bits

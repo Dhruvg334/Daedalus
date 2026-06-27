@@ -30,8 +30,8 @@ async def global_exception_handler(request: Request, exc: Exception):
             "success": False,
             "error": {
                 "code": "INTERNAL_ERROR",
-                "message": "Unexpected server error. Please try again.",
-                "details": str(exc),
+                "message": "Daedalus backend encountered a temporary issue. Please retry in a few seconds.",
+                "details": None if settings.ENVIRONMENT == "production" else str(exc),
             },
         },
     )
@@ -47,7 +47,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
