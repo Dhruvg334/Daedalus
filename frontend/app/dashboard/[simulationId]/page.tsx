@@ -4,36 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
-  Download,
-  ArrowRight,
-  Shield,
-  BookOpen,
-  Zap,
-  Compass,
-  Target,
-  Sparkles,
-  TrendingUp,
-  AlertTriangle,
-  Fingerprint,
-  Layers,
-  Activity,
-  UserCheck,
-  Share2,
-  GitBranch,
-  Network,
-  Bookmark,
-  Award,
-  Clock,
-  Briefcase,
-  CheckCircle2,
-  Calendar,
-  ChevronRight
+  Download, ArrowRight, Shield, BookOpen, Zap, Compass, Target, Sparkles,
+  TrendingUp, Fingerprint, Network, Bookmark, Award, Clock, Briefcase,
+  CheckCircle2, Calendar, ChevronRight, GitBranch, BarChart3, Activity
 } from "lucide-react";
 import { getSimulation, toggleBookmark, getBookmarks } from "@/lib/simulation-store";
 import { getSimulationById, getOpportunities, getLearningPath } from "@/lib/api";
 import type { Simulation, Opportunity, LearningResource } from "@/lib/types";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -55,371 +34,282 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [opps, setOpps] = useState<Opportunity[]>([]);
-  const [learning, setLearning] = useState<LearningResource[]>([]);
+  const [learningRes, setLearningRes] = useState<LearningResource[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-
-    const prefetchHubData = async (currentSim: Simulation) => {
+    const prefetch = async (sim: Simulation) => {
       try {
-        const [opportunityResult, learningResult] = await Promise.allSettled([
-          getOpportunities(currentSim.comparison.recommended_path_id, simulationId),
-          getLearningPath(currentSim.comparison.recommended_path_id)
+        const [o, l] = await Promise.allSettled([
+          getOpportunities(sim.comparison.recommended_path_id, simulationId),
+          getLearningPath(sim.comparison.recommended_path_id),
         ]);
-
         if (cancelled) return;
-        if (opportunityResult.status === "fulfilled") {
-          setOpps(opportunityResult.value.opportunities.slice(0, 2));
-        }
-        if (learningResult.status === "fulfilled") {
-          setLearning(learningResult.value.resources.slice(0, 2));
-        }
-      } catch (error) {
-        console.warn("Optional dashboard hub prefetch failed:", error);
-      }
+        if (o.status === "fulfilled") setOpps(o.value.opportunities.slice(0, 2));
+        if (l.status === "fulfilled") setLearningRes(l.value.resources.slice(0, 2));
+      } catch {}
     };
-
-    const loadData = async () => {
+    const load = async () => {
       try {
         const local = getSimulation(simulationId);
-        let currentSim = local;
+        let current = local;
         if (local) {
           if (cancelled) return;
           setData(local);
           setIsBookmarked(getBookmarks().some(b => b.id === local.simulation_id));
         } else {
           const res = await getSimulationById(simulationId);
-          currentSim = res.simulation;
+          current = res.simulation;
           if (cancelled) return;
           setData(res.simulation);
           setIsBookmarked(getBookmarks().some(b => b.id === res.simulation.simulation_id));
         }
-
         if (!cancelled) setLoading(false);
-        if (currentSim) void prefetchHubData(currentSim);
-      } catch (error) {
-        console.error("Failed to load dashboard data:", error);
-        if (!cancelled) {
-          setLoading(false);
-          router.push("/demo-personas");
-        }
+        if (current) void prefetch(current);
+      } catch {
+        if (!cancelled) { setLoading(false); router.push("/demo-personas"); }
       }
     };
-    loadData();
-    return () => {
-      cancelled = true;
-    };
+    load();
+    return () => { cancelled = true; };
   }, [simulationId, router]);
 
   const handleBookmark = () => {
     if (!data) return;
     const added = toggleBookmark(data.simulation_id, data.student_summary.name);
     setIsBookmarked(!!added);
-    if (added) {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#8b5cf6', '#6366f1']
-      });
-    }
+    if (added) confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ["#7BBAD4","#B0D4E8"] });
   };
 
-  if (loading) {
-    return (
-      <DashboardShell>
-        <div className="space-y-8">
-          <div className="flex justify-between items-end">
-            <div className="space-y-2">
-              <Skeleton className="h-10 w-64" />
-              <Skeleton className="h-4 w-96" />
-            </div>
-            <Skeleton className="h-10 w-32" />
+  if (loading) return (
+    <DashboardShell>
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-72" />
+        <Skeleton className="h-4 w-96" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-8 space-y-6">
+            <Skeleton className="h-72 rounded-2xl" />
+            <div className="grid grid-cols-2 gap-4"><Skeleton className="h-44 rounded-2xl" /><Skeleton className="h-44 rounded-2xl" /></div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-8 space-y-8">
-              <Skeleton className="h-80 rounded-[2rem]" />
-              <div className="grid grid-cols-2 gap-6">
-                <Skeleton className="h-48 rounded-2xl" />
-                <Skeleton className="h-48 rounded-2xl" />
-              </div>
-            </div>
-            <div className="lg:col-span-4 space-y-8">
-              <Skeleton className="h-64 rounded-2xl" />
-              <Skeleton className="h-64 rounded-2xl" />
-            </div>
+          <div className="lg:col-span-4 space-y-6">
+            <Skeleton className="h-56 rounded-2xl" /><Skeleton className="h-56 rounded-2xl" />
           </div>
         </div>
-      </DashboardShell>
-    );
-  }
+      </div>
+    </DashboardShell>
+  );
 
   if (!data) return null;
-
   const simId = data.simulation_id;
   const recommendedId = data.comparison.recommended_path_id;
-  const recommendedPath = data.career_paths.find(p => p.career_id === recommendedId) || data.career_paths[0];
+  const recommended = data.career_paths.find(p => p.career_id === recommendedId) || data.career_paths[0];
 
   return (
     <DashboardShell>
-      <div className="space-y-10">
-        {/* Header Section */}
-        <section className="no-print">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-              <div className="flex items-center gap-2 mb-2 text-primary">
-                <Activity className="w-4 h-4" />
-                <span className="text-xs font-bold uppercase tracking-widest">
-                  {presentationMode ? "Live OS Presentation" : "Career Command Center Active"}
-                </span>
-              </div>
-              <h1 className="text-4xl font-extrabold tracking-tight mb-3">
-                {data.student_summary.name}&apos;s Command Center
-              </h1>
-              <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                {data.student_summary.profile_headline}
-              </p>
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 no-print">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs font-semibold text-neutral-400 uppercase tracking-widest">
+                {presentationMode ? "Live Presentation" : "Career Command Center"}
+              </span>
             </div>
-            <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-500">
-              <div className="flex flex-col items-end mr-4">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">System Confidence</span>
-                <span className="text-xl font-black text-primary">{(recommendedPath.confidence_score * 100).toFixed(1)}%</span>
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleBookmark}
-                className={cn("transition-colors h-11 w-11", isBookmarked && "bg-primary/10 border-primary text-primary")}
-              >
-                <Bookmark className={cn("w-4 h-4", isBookmarked && "fill-current")} />
-              </Button>
-              <Button variant="premium" size="lg" className="gap-2 group h-11 shadow-premium">
-                <UserCheck className="w-4 h-4" /> Finalize Profile
-              </Button>
-            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight mb-2">
+              {data.student_summary.name}'s Dashboard
+            </h1>
+            <p className="text-neutral-500 max-w-xl leading-relaxed text-base">
+              {data.student_summary.profile_headline}
+            </p>
           </div>
-        </section>
+          <div className="flex items-center gap-3">
+            <div className="text-right mr-2">
+              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Confidence</p>
+              <p className="text-2xl font-black text-[#1e6a8a]">{(recommended.confidence_score * 100).toFixed(1)}%</p>
+            </div>
+            <button onClick={handleBookmark}
+              className={cn("w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all",
+                isBookmarked ? "border-[#7BBAD4] bg-[#7BBAD4]/10 text-[#1e6a8a]" : "border-neutral-200 text-neutral-400 hover:border-neutral-300")}>
+              <Bookmark className={cn("w-4 h-4", isBookmarked && "fill-current")} />
+            </button>
+            <Link href={`/sprint/${simId}`}>
+              <button className="btn-dark text-sm">Launch Sprint <Zap className="w-3.5 h-3.5" /></button>
+            </Link>
+          </div>
+        </div>
 
-        {/* --- PART 6: COMMAND CENTER GRID --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* LEFT */}
+          <div className="lg:col-span-8 space-y-6">
 
-          {/* LEFT COLUMN: VISUALS & CORE TASKS */}
-          <div className="lg:col-span-8 space-y-8">
-
-            {/* TODAY'S MISSION CARD */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <Card className="bg-foreground text-background overflow-hidden border-none shadow-premium relative group">
-                <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Zap className="w-32 h-32 text-primary" />
+            {/* Mission card */}
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+              <div className="rounded-2xl bg-black text-white p-7 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-6 opacity-6">
+                  <Zap className="w-28 h-28 text-[#7BBAD4]" />
                 </div>
-                <CardContent className="p-8 space-y-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary rounded-lg shadow-lg shadow-primary/20">
-                      <Calendar className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-background/50">Today's Protocol</span>
-                  </div>
-                  <div className="space-y-2">
-                    <h2 className="text-3xl font-black tracking-tight italic">"{recommendedPath.mission_statement}"</h2>
-                    <p className="text-background/60 text-sm max-w-xl">Focus on Day 1 of your {data.action_sprint.sprint_title}: <span className="text-primary font-bold">{data.action_sprint.days[0].title}</span>.</p>
-                  </div>
-                  <div className="flex gap-4">
-                    <Button variant="secondary" size="sm" className="font-bold" asChild>
-                      <Link href={`/sprint/${simId}`}>Launch 7-Day Sprint</Link>
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-background hover:bg-background/10 font-bold gap-2">
-                      Mark as Complete <CheckCircle2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                <p className="text-[10px] font-bold uppercase tracking-[.2em] text-white/40 mb-2 flex items-center gap-2">
+                  <Calendar className="w-3 h-3" /> Today's focus
+                </p>
+                <h2 className="text-2xl font-black italic mb-3 max-w-lg">"{recommended.mission_statement}"</h2>
+                <p className="text-white/55 text-sm mb-5">
+                  Day 1 of your sprint: <span className="text-[#7BBAD4] font-semibold">{data.action_sprint.days[0].title}</span>
+                </p>
+                <div className="flex gap-3">
+                  <Link href={`/sprint/${simId}`}>
+                    <button className="px-4 py-2 bg-[#7BBAD4] text-black text-sm font-bold rounded-full hover:bg-[#9ACFDF] transition-colors">
+                      Start 7-Day Sprint
+                    </button>
+                  </Link>
+                  <button className="px-4 py-2 bg-white/10 text-white text-sm font-medium rounded-full hover:bg-white/15 transition-colors flex items-center gap-1.5">
+                    Mark complete <CheckCircle2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
             </motion.div>
 
-            {/* SIGNAL MAP VISUALIZATION */}
-            <section className="space-y-4 no-print">
+            {/* Career map */}
+            <div className="space-y-3 no-print">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <Network className="w-4 h-4" /> Interactive Career Map
+                <h2 className="text-sm font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2">
+                  <Network className="w-4 h-4" /> Career Map
                 </h2>
-                <Badge variant="outline" className="text-[10px] font-mono bg-background">MAP_ENGINE_v1.1</Badge>
+                <span className="tag-blue">Interactive</span>
               </div>
               <CareerGraph simulation={data} />
-            </section>
+            </div>
 
-            {/* EVOLUTIONARY PATHS GRID */}
-            <section className="space-y-6">
+            {/* Career paths */}
+            <div className="space-y-4">
               <div className="flex items-center justify-between no-print">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <Compass className="w-5 h-5 text-muted-foreground" />
-                  Primary Trajectories
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <Compass className="w-4 h-4 text-neutral-400" /> Your Career Paths
                 </h2>
-                <Link href={`/comparison/${simId}`} className="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
-                  Compare Analysis Matrix <ArrowRight className="w-3 h-3" />
+                <Link href={`/comparison/${simId}`}
+                  className="text-xs font-semibold text-[#1e6a8a] flex items-center gap-1 hover:underline">
+                  Compare paths <ArrowRight className="w-3 h-3" />
                 </Link>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {data.career_paths.map((path, index) => {
-                  const recommended = path.career_id === recommendedId;
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {data.career_paths.map((path, i) => {
+                  const isRec = path.career_id === recommendedId;
                   return (
-                    <motion.div
-                      key={path.career_id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 + (index * 0.1) }}
-                    >
-                      <Card className={cn(
-                        "h-full flex flex-col group transition-all duration-300 overflow-hidden border-border/40",
-                        recommended ? "border-primary/50 shadow-xl ring-1 ring-primary/10" : "hover:border-foreground/20 shadow-sm"
+                    <motion.div key={path.career_id}
+                      initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 + i * 0.08 }}>
+                      <div className={cn(
+                        "h-full flex flex-col p-5 rounded-2xl border-2 bg-white transition-all group",
+                        isRec ? "border-[#7BBAD4] shadow-md" : "border-neutral-100 hover:border-neutral-300"
                       )}>
-                        <CardHeader className="pb-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <Badge variant={recommended ? "default" : "secondary"} className="text-[9px] font-black h-5 uppercase tracking-tighter">
-                              {path.cluster}
-                            </Badge>
-                            {recommended && <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />}
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="tag-blue">{path.cluster}</span>
+                          {isRec && <Sparkles className="w-3.5 h-3.5 text-[#7BBAD4] animate-pulse" />}
+                        </div>
+                        <h3 className="font-bold text-base mb-1 group-hover:text-[#1e6a8a] transition-colors">{path.title}</h3>
+                        <p className="text-neutral-500 text-xs leading-relaxed mb-4 line-clamp-2">{path.one_line_summary}</p>
+                        <div className="mt-auto space-y-2">
+                          <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
+                            <span className="text-neutral-400">Match</span>
+                            <span className="text-black">{path.fit_score}%</span>
                           </div>
-                          <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors">{path.title}</CardTitle>
-                          <CardDescription className="line-clamp-2 leading-relaxed text-xs">
-                            {path.one_line_summary}
-                          </CardDescription>
-                        </CardHeader>
-
-                        <CardContent className="flex-1 space-y-4 pt-2">
-                          <div className="space-y-3">
-                            <div className="flex justify-between items-end text-[10px] font-bold uppercase tracking-wider">
-                              <span className="text-muted-foreground">Match Affinity</span>
-                              <span className="text-foreground">{path.fit_score}%</span>
-                            </div>
-                            <Progress value={path.fit_score} className="h-1.5" />
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
+                          <Progress value={path.fit_score} className="h-1.5" />
+                          <div className="flex flex-wrap gap-1 pt-1">
                             {path.matched_skills.slice(0, 3).map(s => (
-                              <Badge key={s} variant="outline" className="text-[8px] bg-emerald-500/5 text-emerald-600 border-emerald-500/10 uppercase">
-                                {s}
-                              </Badge>
+                              <span key={s} className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">{s}</span>
                             ))}
                           </div>
-                        </CardContent>
-
-                        <CardFooter className="pt-2 gap-2 no-print bg-muted/20 border-t border-border/5">
-                          <Button variant="outline" size="sm" className="w-full text-[10px] font-bold uppercase" asChild>
-                            <Link href={`/career/${simId}/${path.career_id}`}>Strategic Audit</Link>
-                          </Button>
-                        </CardFooter>
-                      </Card>
+                        </div>
+                        <Link href={`/career/${simId}/${path.career_id}`}
+                          className="mt-4 w-full py-2 rounded-xl border border-neutral-200 text-xs font-semibold text-center
+                            hover:border-[#7BBAD4] hover:text-[#1e6a8a] transition-all block">
+                          View full analysis →
+                        </Link>
+                      </div>
                     </motion.div>
                   );
                 })}
               </div>
-            </section>
+            </div>
           </div>
 
-          {/* RIGHT COLUMN: ANALYTICS & HUB PREVIEWS */}
-          <div className="lg:col-span-4 space-y-8">
-
-            {/* SYSTEM ANALYTICS */}
-            <Card className="border-border/40 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden">
-              <CardHeader className="bg-muted/30 pb-4">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-primary" />
-                  <CardTitle className="text-sm font-bold uppercase tracking-widest">Progress Metrics</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-6">
-                <StatMetric label="Interview Readiness" value={15} target={100} icon={Shield} color="text-amber-500" />
-                <StatMetric label="Skill Verification" value={42} target={100} icon={CheckCircle2} color="text-emerald-500" />
-                <StatMetric label="Learning Hours" value={3.5} target={20} suffix="h" icon={Clock} color="text-primary" />
-              </CardContent>
-            </Card>
-
-            {/* COGNITIVE DNA PREVIEW */}
-            <Card className="border-border/40 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden no-print">
-              <CardHeader className="bg-muted/30 pb-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Fingerprint className="w-4 h-4 text-primary" />
-                  <CardTitle className="text-sm font-bold uppercase tracking-widest">Cognitive Signature</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <CareerDNA traits={data.career_dna} />
-              </CardContent>
-            </Card>
-
-            {/* OPPORTUNITY HUB PREVIEW */}
-            <Card className="border-border/40 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden">
-              <CardHeader className="bg-muted/30 pb-4 flex flex-row items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Briefcase className="w-4 h-4 text-primary" />
-                  <CardTitle className="text-sm font-bold uppercase tracking-widest">Opportunity Engine</CardTitle>
-                </div>
-                <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
-                  <Link href={`/opportunities/${simId}`}><ChevronRight className="w-4 h-4" /></Link>
-                </Button>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-3">
-                {opps.map(opp => (
-                  <div key={opp.id} className="p-3 rounded-xl border bg-muted/20 hover:bg-muted/40 transition-colors group cursor-pointer">
-                    <p className="text-xs font-bold truncate group-hover:text-primary">{opp.title}</p>
-                    <p className="text-[10px] text-muted-foreground">{opp.organization}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* LEARNING HUB PREVIEW */}
-            <Card className="border-border/40 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden">
-              <CardHeader className="bg-muted/30 pb-4 flex flex-row items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-emerald-500" />
-                  <CardTitle className="text-sm font-bold uppercase tracking-widest">Neural Learning</CardTitle>
-                </div>
-                <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
-                  <Link href={`/learning/${simId}`}><ChevronRight className="w-4 h-4" /></Link>
-                </Button>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-3">
-                {learning.map(res => (
-                  <div key={res.id} className="p-3 rounded-xl border bg-muted/20 hover:bg-muted/40 transition-colors group cursor-pointer">
-                    <p className="text-xs font-bold truncate group-hover:text-emerald-500">{res.title}</p>
-                    <p className="text-[10px] text-muted-foreground">{res.provider} · {res.estimated_time}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* DECISION LAB BUTTON */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6 }}
-              className="p-6 rounded-2xl bg-primary text-primary-foreground space-y-4 shadow-premium group cursor-pointer no-print relative overflow-hidden"
-            >
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-700" />
-              <div className="flex items-center justify-between relative z-10">
-                <h4 className="font-bold flex items-center gap-2">
-                  <GitBranch className="w-4 h-4" />
-                  Decision Lab
-                </h4>
-                <Badge className="bg-white/20 text-white border-none text-[9px] font-mono">BETA_v2.1</Badge>
-              </div>
-              <p className="text-xs text-primary-foreground/80 leading-relaxed relative z-10">
-                "What if I increase my focus on Strategic Logic by 20%?"
-              </p>
-              <Button variant="secondary" size="sm" className="w-full text-[10px] font-black uppercase group-hover:bg-white transition-colors relative z-10" asChild>
-                <Link href={`/simulations/${simId}`}>Launch Simulation Engine</Link>
-              </Button>
-            </motion.div>
-
-            {/* System Info */}
-            <div className="pt-4 text-center space-y-1 opacity-30 no-print">
-              <p className="text-[8px] font-mono uppercase tracking-[0.3em]">Daedalus_Kernel // Build_0x92f</p>
-              <p className="text-[8px] font-mono uppercase tracking-[0.3em]">Latency: 42ms // Secure_Link: Active</p>
+          {/* RIGHT */}
+          <div className="lg:col-span-4 space-y-5">
+            {/* Progress */}
+            <div className="rounded-2xl border border-neutral-100 bg-white p-5 space-y-5">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-2">
+                <TrendingUp className="w-3.5 h-3.5" /> Progress
+              </h3>
+              <Metric label="Interview Readiness" value={15} target={100} color="#7BBAD4" />
+              <Metric label="Skills Verified" value={42} target={100} color="#34d399" />
+              <Metric label="Learning Hours" value={3.5} target={20} suffix="h" color="#f59e0b" />
             </div>
+
+            {/* DNA */}
+            <div className="rounded-2xl border border-neutral-100 bg-white p-5 no-print">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-2 mb-4">
+                <Fingerprint className="w-3.5 h-3.5" /> Cognitive Profile
+              </h3>
+              <CareerDNA traits={data.career_dna} />
+            </div>
+
+            {/* Opportunities */}
+            <div className="rounded-2xl border border-neutral-100 bg-white p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-2">
+                  <Briefcase className="w-3.5 h-3.5" /> Opportunities
+                </h3>
+                <Link href={`/opportunities/${simId}`} className="text-[#1e6a8a] hover:underline">
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {opps.map(o => (
+                  <div key={o.id} className="p-3 rounded-xl bg-neutral-50 hover:bg-neutral-100 transition-colors cursor-pointer">
+                    <p className="text-xs font-semibold truncate text-black">{o.title}</p>
+                    <p className="text-[11px] text-neutral-400">{o.organization}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Learning */}
+            <div className="rounded-2xl border border-neutral-100 bg-white p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-2">
+                  <BookOpen className="w-3.5 h-3.5" /> Learning
+                </h3>
+                <Link href={`/learning/${simId}`} className="text-[#1e6a8a] hover:underline">
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {learningRes.map(r => (
+                  <div key={r.id} className="p-3 rounded-xl bg-neutral-50 hover:bg-neutral-100 transition-colors cursor-pointer">
+                    <p className="text-xs font-semibold truncate text-black">{r.title}</p>
+                    <p className="text-[11px] text-neutral-400">{r.provider} · {r.estimated_time}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Decision lab */}
+            <Link href={`/simulations/${simId}`}
+              className="block p-5 rounded-2xl bg-[#7BBAD4]/12 border border-[#7BBAD4]/30 hover:bg-[#7BBAD4]/18 transition-colors group no-print">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-bold text-[#1e6a8a] flex items-center gap-2 text-sm">
+                  <GitBranch className="w-4 h-4" /> Decision Lab
+                </h4>
+                <span className="tag-blue">Beta</span>
+              </div>
+              <p className="text-xs text-neutral-500 leading-relaxed mb-3">
+                "What if I focused more on Strategic Logic?"
+              </p>
+              <span className="text-xs font-semibold text-[#1e6a8a] flex items-center gap-1 group-hover:gap-2 transition-all">
+                Open lab <ArrowRight className="w-3 h-3" />
+              </span>
+            </Link>
           </div>
         </div>
       </div>
@@ -427,18 +317,17 @@ export default function DashboardPage() {
   );
 }
 
-function StatMetric({ label, value, target, icon: Icon, color, suffix = "%" }: any) {
+function Metric({ label, value, target, color, suffix = "%" }: { label: string; value: number; target: number; color: string; suffix?: string }) {
   const pct = Math.min(100, (value / target) * 100);
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-        <div className="flex items-center gap-2">
-          <Icon className={cn("w-3 h-3", color)} />
-          <span className="text-muted-foreground">{label}</span>
-        </div>
-        <span className="text-foreground">{value}{suffix}</span>
+    <div className="space-y-1.5">
+      <div className="flex justify-between text-[11px] font-semibold">
+        <span className="text-neutral-500">{label}</span>
+        <span className="text-black">{value}{suffix}</span>
       </div>
-      <Progress value={pct} className="h-1 bg-muted/30" />
+      <div className="h-1.5 w-full bg-neutral-100 rounded-full overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
+      </div>
     </div>
   );
 }

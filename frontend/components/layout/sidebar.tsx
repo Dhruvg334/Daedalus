@@ -5,23 +5,9 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
-  LayoutDashboard,
-  Compass,
-  Zap,
-  Target,
-  Layers,
-  Settings,
-  HelpCircle,
-  ChevronRight,
-  Sparkles,
-  GitBranch,
-  BarChart3,
-  Bookmark,
-  Clock,
-  Activity,
-  Briefcase,
-  GraduationCap,
-  MessageSquare
+  LayoutDashboard, Compass, Zap, Target,
+  ChevronRight, Sparkles, GitBranch, BarChart3,
+  Bookmark, Clock, Briefcase, GraduationCap, Layers
 } from "lucide-react"
 import { getBookmarks, getRecentViews, getSimulation } from "@/lib/simulation-store"
 
@@ -31,107 +17,113 @@ export function Sidebar() {
   const [recent, setRecent] = useState<any[]>([])
   const [recommendedPathId, setRecommendedPathId] = useState<string | null>(null)
 
-  // Extract simulationId from pathname
   const simIdMatch = pathname.match(/\/(?:dashboard|career|skills|sprint|trace|comparison|simulations|opportunities|learning)\/([^\/]+)/)
   const simulationId = simIdMatch ? simIdMatch[1] : ""
 
   useEffect(() => {
     setBookmarks(getBookmarks())
     setRecent(getRecentViews())
-
     if (simulationId) {
       const sim = getSimulation(simulationId)
-      if (sim) {
-        setRecommendedPathId(sim.comparison.recommended_path_id)
-      }
+      if (sim) setRecommendedPathId(sim.comparison.recommended_path_id)
     }
   }, [pathname, simulationId])
 
-  const sidebarItems = [
-    { name: "Overview", href: `/dashboard/${simulationId}`, icon: LayoutDashboard, activeCheck: "/dashboard" },
-    { name: "Evolution Paths", href: recommendedPathId ? `/career/${simulationId}/${recommendedPathId}` : `/career/${simulationId}`, icon: Compass, activeCheck: "/career" },
-    { name: "Intelligence Matrix", href: `/comparison/${simulationId}`, icon: BarChart3, activeCheck: "/comparison" },
-    { name: "Opportunity Hub", href: `/opportunities/${simulationId}`, icon: Briefcase, activeCheck: "/opportunities" },
-    { name: "Learning Ecosystem", href: `/learning/${simulationId}`, icon: GraduationCap, activeCheck: "/learning" },
-    { name: "Skill Architecture", href: `/skills/${simulationId}`, icon: Target, activeCheck: "/skills" },
-    { name: "Execution Sprint", href: `/sprint/${simulationId}`, icon: Zap, activeCheck: "/sprint" },
+  const navItems = [
+    { name: "Overview", href: `/dashboard/${simulationId}`, icon: LayoutDashboard, check: "/dashboard" },
+    { name: "Career Paths", href: recommendedPathId ? `/career/${simulationId}/${recommendedPathId}` : `/career/${simulationId}`, icon: Compass, check: "/career" },
+    { name: "Comparison", href: `/comparison/${simulationId}`, icon: BarChart3, check: "/comparison" },
+    { name: "Opportunities", href: `/opportunities/${simulationId}`, icon: Briefcase, check: "/opportunities" },
+    { name: "Learning", href: `/learning/${simulationId}`, icon: GraduationCap, check: "/learning" },
+    { name: "Skills", href: `/skills/${simulationId}`, icon: Target, check: "/skills" },
+    { name: "Sprint", href: `/sprint/${simulationId}`, icon: Zap, check: "/sprint" },
   ]
 
   return (
-    <aside className="flex flex-col w-64 border-r bg-card/30 backdrop-blur-xl h-screen sticky top-0 overflow-y-auto custom-scrollbar no-print">
-      <div className="p-6 flex items-center gap-3">
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-premium group-hover:rotate-12 transition-transform duration-300">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
+    <aside className="flex flex-col w-60 border-r border-border/60 bg-white dark:bg-card h-screen sticky top-0 overflow-y-auto custom-scrollbar no-print">
+      {/* Logo */}
+      <div className="px-5 py-4 border-b border-border/40">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="w-7 h-7 rounded-full bg-[#7BBAD4] flex items-center justify-center group-hover:scale-105 transition-transform">
+            <Sparkles className="w-4 h-4 text-white" />
           </div>
-          <span className="font-bold text-xl tracking-tight">Daedalus</span>
+          <span className="font-bold text-base tracking-tight">Daedalus</span>
         </Link>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1 mt-4">
-        {simulationId ? (
-          sidebarItems.map((item) => {
-            const isActive = pathname.includes(item.activeCheck)
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all group",
-                  isActive
-                    ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                )}
-              >
-                <item.icon className={cn("w-4 h-4 transition-colors", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
-                {item.name}
-                {isActive && <ChevronRight className="ml-auto w-4 h-4 animate-in slide-in-from-left-2" />}
-              </Link>
-            )
-          })
-        ) : (
-          <div className="px-3 py-4 rounded-xl bg-muted/20 border border-dashed border-border text-center">
-            <Activity className="w-5 h-5 text-muted-foreground/30 mx-auto mb-2" />
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">No Active Kernel</p>
-            <Link href="/onboarding" className="text-[10px] text-primary hover:underline font-bold">Initialize System →</Link>
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-4 space-y-0.5">
+        {simulationId ? navItems.map(item => {
+          const active = pathname.includes(item.check)
+          return (
+            <Link key={item.name} href={item.href}
+              className={cn(
+                "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                active
+                  ? "bg-[#7BBAD4]/12 text-[#1e6a8a] dark:text-[#7BBAD4]"
+                  : "text-neutral-500 hover:bg-neutral-100 dark:hover:bg-white/5 hover:text-black dark:hover:text-white"
+              )}>
+              <item.icon className={cn("w-4 h-4 shrink-0", active ? "text-[#7BBAD4]" : "text-neutral-400")} />
+              {item.name}
+              {active && <ChevronRight className="ml-auto w-3.5 h-3.5 text-[#7BBAD4]" />}
+            </Link>
+          )
+        }) : (
+          <div className="px-3 py-4 rounded-xl border border-dashed border-border text-center mx-1">
+            <p className="text-xs text-neutral-400 mb-2">No simulation yet</p>
+            <Link href="/onboarding" className="text-xs font-semibold text-[#1e6a8a] hover:underline">Start one →</Link>
           </div>
         )}
 
-        {/* Dynamic Sections */}
+        {/* Divider + extras */}
+        {simulationId && (
+          <div className="pt-4 mt-2 border-t border-border/40">
+            <p className="px-3 text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Tools</p>
+            {[
+              { href: `/simulations/${simulationId}`, label: "Decision Lab", icon: GitBranch, check: "/simulations" },
+              { href: `/trace/${simulationId}`, label: "System Trace", icon: Layers, check: "/trace" },
+            ].map(item => {
+              const active = pathname.startsWith(item.check)
+              return (
+                <Link key={item.href} href={item.href}
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                    active ? "bg-[#7BBAD4]/12 text-[#1e6a8a]" : "text-neutral-500 hover:bg-neutral-100 hover:text-black"
+                  )}>
+                  <item.icon className={cn("w-4 h-4", active ? "text-[#7BBAD4]" : "text-neutral-400")} />
+                  {item.label}
+                </Link>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Bookmarks */}
         {bookmarks.length > 0 && (
-          <div className="pt-6 pb-2">
-            <p className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-2">
-              <Bookmark className="w-3 h-3" /> Bookmarks
+          <div className="pt-4 mt-2 border-t border-border/40">
+            <p className="px-3 text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+              <Bookmark className="w-3 h-3" /> Saved
             </p>
             {bookmarks.map(b => (
-              <Link
-                key={b.id}
-                href={`/dashboard/${b.id}`}
-                className={cn(
-                  "flex items-center px-3 py-1.5 text-xs rounded-md transition-colors truncate",
-                  simulationId === b.id ? "text-primary font-bold bg-primary/5" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
+              <Link key={b.id} href={`/dashboard/${b.id}`}
+                className={cn("flex items-center px-3 py-1.5 text-xs rounded-lg transition-colors truncate font-medium",
+                  simulationId === b.id ? "text-[#1e6a8a] bg-[#7BBAD4]/8" : "text-neutral-500 hover:text-black hover:bg-neutral-50")}>
                 {b.name}
               </Link>
             ))}
           </div>
         )}
 
+        {/* Recent */}
         {recent.length > 0 && (
-          <div className="pt-4">
-            <p className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-2">
+          <div className="pt-3">
+            <p className="px-3 text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
               <Clock className="w-3 h-3" /> Recent
             </p>
             {recent.map(r => (
-              <Link
-                key={r.id}
-                href={`/dashboard/${r.id}`}
-                className={cn(
-                  "flex items-center px-3 py-1.5 text-xs rounded-md transition-colors truncate",
-                  simulationId === r.id ? "text-primary font-bold bg-primary/5" : "text-muted-foreground/60 hover:text-foreground"
-                )}
-              >
+              <Link key={r.id} href={`/dashboard/${r.id}`}
+                className={cn("flex items-center px-3 py-1.5 text-xs rounded-lg transition-colors truncate",
+                  simulationId === r.id ? "text-[#1e6a8a] font-semibold" : "text-neutral-400 hover:text-black hover:bg-neutral-50")}>
                 {r.name}
               </Link>
             ))}
@@ -139,44 +131,14 @@ export function Sidebar() {
         )}
       </nav>
 
-      <div className="p-4 border-t space-y-4">
-        {simulationId && (
-          <div className="px-3">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Intelligence Hub</p>
-            <div className="space-y-1">
-              <Link
-                href={`/simulations/${simulationId}`}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all",
-                  pathname.startsWith("/simulations") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent"
-                )}
-              >
-                <GitBranch className="w-4 h-4" />
-                Decision Lab
-              </Link>
-              <Link
-                href={`/trace/${simulationId}`}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all",
-                  pathname.startsWith("/trace") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent"
-                )}
-              >
-                <Layers className="w-4 h-4" />
-                System Trace
-              </Link>
-            </div>
-          </div>
-        )}
-
-        <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-transparent border border-primary/20 group cursor-pointer overflow-hidden relative">
-          <div className="absolute inset-0 bg-primary/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-          <div className="relative z-10">
-            <p className="text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Pro Intelligence</p>
-            <p className="text-[10px] text-muted-foreground leading-relaxed">Unlock 'What-if' scenarios and dynamic risk modelling.</p>
-            <button className="mt-3 w-full py-2 bg-foreground text-background text-[10px] font-bold rounded-lg hover:opacity-90 transition-opacity">
-              Upgrade OS
-            </button>
-          </div>
+      {/* Bottom CTA */}
+      <div className="px-4 pb-5 pt-3 border-t border-border/40">
+        <div className="p-4 rounded-xl bg-[#7BBAD4]/10 border border-[#7BBAD4]/25">
+          <p className="text-xs font-semibold text-[#1e6a8a] mb-1">Upgrade to Pro</p>
+          <p className="text-[11px] text-neutral-500 leading-snug mb-3">What-if scenarios and dynamic risk modelling.</p>
+          <button className="w-full py-2 bg-black text-white text-[11px] font-bold rounded-lg hover:bg-neutral-800 transition-colors">
+            Upgrade
+          </button>
         </div>
       </div>
     </aside>
