@@ -100,8 +100,12 @@ export function HackathonProvider({ children }: { children: React.ReactNode }) {
 
 export const useHackathon = () => {
   const context = useContext(HackathonContext)
-  if (!context) throw new Error("useHackathon must be used within HackathonProvider")
-  return context
+  return context ?? {
+    presentationMode: false,
+    judgeMode: false,
+    togglePresentation: () => {},
+    toggleJudge: () => {},
+  }
 }
 
 function PresentationBadge({ show }: { show: boolean }) {

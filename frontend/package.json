@@ -3,10 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node ./scripts/clean-next.mjs && next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "dev:turbo": "next dev",
+    "build:turbo": "next build",
+    "build:webpack": "node ./scripts/clean-next.mjs && next build --webpack"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.2.0",

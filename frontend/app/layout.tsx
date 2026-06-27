@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { HackathonProvider } from "@/components/layout/hackathon-modes";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -15,11 +14,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" suppressHydrationWarning className={cn("font-sans")}>
       <body className="antialiased selection:bg-[#B0D4E8] selection:text-black">
         <ThemeProvider defaultTheme="light" storageKey="daedalus-theme">
-          <TooltipProvider>
-            <HackathonProvider>
-              {children}
-            </HackathonProvider>
-          </TooltipProvider>
+          <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
       </body>
     </html>

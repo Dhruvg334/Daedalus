@@ -9,7 +9,7 @@ import { AssistantDrawer } from "@/components/intelligence/assistant-drawer"
 import { GuidedTour } from "./guided-tour"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { useHackathon } from "./hackathon-modes"
+import { HackathonProvider, useHackathon } from "./hackathon-modes"
 import { usePathname, useParams } from "next/navigation"
 import Link from "next/link"
 import { Sparkles } from "lucide-react"
@@ -19,7 +19,15 @@ interface DashboardShellProps {
   className?: string
 }
 
-export function DashboardShell({ children, className }: DashboardShellProps) {
+export function DashboardShell(props: DashboardShellProps) {
+  return (
+    <HackathonProvider>
+      <DashboardShellContent {...props} />
+    </HackathonProvider>
+  )
+}
+
+function DashboardShellContent({ children, className }: DashboardShellProps) {
   const { presentationMode } = useHackathon()
   const pathname = usePathname()
   const params = useParams()
