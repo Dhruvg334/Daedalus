@@ -1,0 +1,80 @@
+{
+  "learning_roadmap": [
+    {
+      "step": 1,
+      "title": "Foundational Life Science & Research: {first_gap}",
+      "description": "Study core biological or clinical protocols and master the basics of {first_gap}.",
+      "estimated_time": "5-7 hours"
+    },
+    {
+      "step": 2,
+      "title": "Clinical/Health Data Application: {second_gap}",
+      "description": "Analyze patient metrics, public health data, or trial research using {second_gap}.",
+      "estimated_time": "7-9 hours"
+    },
+    {
+      "step": 3,
+      "title": "Ethics & Patient Communication Brief",
+      "description": "Draft a plain-language summary of a health case study with source verification and safety guidelines.",
+      "estimated_time": "2-3 hours"
+    }
+  ],
+  "ai_exposure_breakdown": [
+    {
+      "task": "Literature review & data retrieval",
+      "ai_role": "AI summarizes medical journals, clinical trials, and compound data.",
+      "human_role": "Human verifies source reliability, clinical relevance, and validity.",
+      "risk_level": "medium"
+    },
+    {
+      "task": "Patient interaction & care planning",
+      "ai_role": "AI suggests general wellness tips and preliminary triage questions.",
+      "human_role": "Human owns empathetic communication, physical diagnosis, and ethical responsibility.",
+      "risk_level": "low"
+    },
+    {
+      "task": "Diagnostic imaging assistance",
+      "ai_role": "AI scans imaging files to flag anomalies for doctor review.",
+      "human_role": "Human specialist validates findings, manages treatment plans, and oversees care.",
+      "risk_level": "high"
+    }
+  ],
+  "evolution_timeline": [
+    {
+      "period": "0-3 months",
+      "title": "Clinical / Health Research Assistant",
+      "description": "Learn medical terminology, summarize peer-reviewed studies, and support health data collection.",
+      "unlocked_capabilities": ["Health literacy", "first study summary release"],
+      "risk_factor": 0.1
+    },
+    {
+      "period": "6-12 months",
+      "title": "Health Tech / Clinical Coordinator",
+      "description": "Coordinate trial data, manage health communication projects, and evaluate biotech tools.",
+      "unlocked_capabilities": ["Clinical data management", "patient communication protocols"],
+      "risk_factor": 0.2
+    },
+    {
+      "period": "2-3 years",
+      "title": "Specialized Healthcare Practitioner / Lead",
+      "description": "Lead specialized patient care or biotech product development combining domain judgment and AI technology.",
+      "unlocked_capabilities": ["Specialized clinical judgment", "healthcare program leadership"],
+      "risk_factor": 0.3
+    }
+  ],
+  "future_self": {
+    "headline": "Future Healthcare / Bio-Impact Professional",
+    "narrative": "{name} can make a tangible human impact by combining healthcare empathy with technology. AI tools will accelerate research and data analysis, but human judgment and care remain paramount.",
+    "future_resume_highlights": [
+      "Created a plain-language health communication guide based on {title}.",
+      "Analyzed public health data sets to extract actionable community insights.",
+      "Demonstrated rigorous ethical compliance and source verification."
+    ]
+  },
+  "risk_heatmap": [
+    {"category": "Automation", "score": 0.35, "description": "High human interaction and diagnostic responsibility limit full automation."},
+    {"category": "Skill Half-life", "score": 0.3, "description": "Core medical and biological fundamentals remain steady across decades."},
+    {"category": "Entry Competition", "score": 0.45, "description": "Rigorous qualification standards create strong barriers to entry."},
+    {"category": "Trust Requirement", "score": 0.9, "description": "Human lives and privacy require the highest standards of trust and ethical accountability."}
+  ]
+}

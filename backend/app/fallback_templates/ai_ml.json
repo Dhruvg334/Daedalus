@@ -1,0 +1,80 @@
+{
+  "learning_roadmap": [
+    {
+      "step": 1,
+      "title": "Core AI Principles & Python: {first_gap}",
+      "description": "Understand core neural networks or logic architectures and practice hands-on coding of {first_gap}.",
+      "estimated_time": "5-7 hours"
+    },
+    {
+      "step": 2,
+      "title": "Model/API Pipeline Integration: {second_gap}",
+      "description": "Integrate pretrained models, LLMs, or data pipelines with {second_gap} to create a functional system.",
+      "estimated_time": "8-10 hours"
+    },
+    {
+      "step": 3,
+      "title": "AI Quality Control and Evaluation",
+      "description": "Build an validation suite to evaluate the model's responses, measuring performance, hallucination rates, or accuracy.",
+      "estimated_time": "3-4 hours"
+    }
+  ],
+  "ai_exposure_breakdown": [
+    {
+      "task": "Model training & data prep",
+      "ai_role": "AI can suggest data cleaning scripts, build synthetic data, or suggest neural architectures.",
+      "human_role": "Human designs evaluation protocols, checks bias, and chooses target objectives.",
+      "risk_level": "medium"
+    },
+    {
+      "task": "Prompt design & integration",
+      "ai_role": "AI writes base code, helper libraries, and API calls.",
+      "human_role": "Human structures the prompt chaining, implements error fallbacks, and manages context windows.",
+      "risk_level": "low"
+    },
+    {
+      "task": "Product deployment & safety",
+      "ai_role": "AI monitors anomaly logs and generates alert rules.",
+      "human_role": "Human sets security rules, alignment guardrails, and compliance logic.",
+      "risk_level": "high"
+    }
+  ],
+  "evolution_timeline": [
+    {
+      "period": "0-3 months",
+      "title": "AI App Builder",
+      "description": "Learn to connect LLM APIs or simple machine learning libraries to a frontend, shipping your first AI-augmented tool.",
+      "unlocked_capabilities": ["Prompt chaining", "first demo release"],
+      "risk_factor": 0.1
+    },
+    {
+      "period": "6-12 months",
+      "title": "AI Systems Engineer",
+      "description": "Optimize AI latency and cost through model fine-tuning, retrieval-augmented generation (RAG), or vector database setups.",
+      "unlocked_capabilities": ["Vector search integration", "cost & latency optimization"],
+      "risk_factor": 0.25
+    },
+    {
+      "period": "2-3 years",
+      "title": "AI Architect / Lead Engineer",
+      "description": "Design custom agentic architectures, multi-agent frameworks, and end-to-end model deployments for complex systems.",
+      "unlocked_capabilities": ["Agentic system design", "custom model lifecycle management"],
+      "risk_factor": 0.45
+    }
+  ],
+  "future_self": {
+    "headline": "Specialized AI/ML Developer",
+    "narrative": "{name} can leverage their passion for computing by designing smart systems that combine LLMs and structured workflows. The future belongs to builders who pair AI APIs with robust engineering.",
+    "future_resume_highlights": [
+      "Designed and deployed a task-oriented AI workflow using {title} concepts.",
+      "Established RAG data structures to improve query retrieval quality.",
+      "Documented AI performance validation matrices and user experience feedback."
+    ]
+  },
+  "risk_heatmap": [
+    {"category": "Automation", "score": 0.8, "description": "Standard code templates and API integration code will be highly automated by code assistants."},
+    {"category": "Skill Half-life", "score": 0.85, "description": "Rapid changes in framework libraries and models require constant retraining and adaptability."},
+    {"category": "Entry Competition", "score": 0.55, "description": "Highly popular entry path; standing out requires specialized vertical domain knowledge or system-level expertise."},
+    {"category": "Trust Requirement", "score": 0.7, "description": "Handling private data, model safety, and bias makes human validation and alignment highly critical."}
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "learning_roadmap": [
+    {
+      "step": 1,
+      "title": "UX Research & Prototyping: {first_gap}",
+      "description": "Gather user insights and create wireframes and high-fidelity mockups using {first_gap}.",
+      "estimated_time": "4-6 hours"
+    },
+    {
+      "step": 2,
+      "title": "Interactive Components: {second_gap}",
+      "description": "Construct responsive interactive elements and user flows using {second_gap}.",
+      "estimated_time": "6-8 hours"
+    },
+    {
+      "step": 3,
+      "title": "Usability Testing & Case Study",
+      "description": "Conduct a usability test with 3-5 users, document insights, and package the findings into a clear visual case study.",
+      "estimated_time": "2-3 hours"
+    }
+  ],
+  "ai_exposure_breakdown": [
+    {
+      "task": "Visual layouts & assets",
+      "ai_role": "AI generates layout drafts, colors, icons, and placeholder copy.",
+      "human_role": "Human crafts the visual brand guidelines, custom illustrations, and final layout polishing.",
+      "risk_level": "medium"
+    },
+    {
+      "task": "User testing synthesis",
+      "ai_role": "AI summarizes user interview transcripts and groups feedback themes.",
+      "human_role": "Human interprets emotional nuance, defines core needs, and steers the product direction.",
+      "risk_level": "low"
+    },
+    {
+      "task": "Interaction design",
+      "ai_role": "AI recommends standard accessibility guidelines and micro-interactions.",
+      "human_role": "Human tailors specific animated behaviors, UX logic, and verifies platform compatibility.",
+      "risk_level": "medium"
+    }
+  ],
+  "evolution_timeline": [
+    {
+      "period": "0-3 months",
+      "title": "Junior UX/UI Designer",
+      "description": "Build high-fidelity screens, conduct simple user interviews, and assemble clean design components.",
+      "unlocked_capabilities": ["Figma component design", "first user research report"],
+      "risk_factor": 0.12
+    },
+    {
+      "period": "6-12 months",
+      "title": "Product Designer",
+      "description": "Own entire user flows, design systems, interactive prototypes, and participate in core product strategy.",
+      "unlocked_capabilities": ["Design system maintenance", "interactive prototyping at scale"],
+      "risk_factor": 0.24
+    },
+    {
+      "period": "2-3 years",
+      "title": "Senior / Lead Product Designer",
+      "description": "Direct the product vision, coordinate cross-functional handoffs, and align user experience with business metrics.",
+      "unlocked_capabilities": ["Product strategy alignment", "team leadership"],
+      "risk_factor": 0.38
+    }
+  ],
+  "future_self": {
+    "headline": "Future AI-Native Product Designer",
+    "narrative": "{name} can stand out by combining human empathy and visual taste with AI prototyping tools. The future of design belongs to designers who can translate complex user needs into delightful, intuitive screens.",
+    "future_resume_highlights": [
+      "Designed an interactive mobile/web prototype based on {title}.",
+      "Published a complete UX case study highlighting user research and testing.",
+      "Created reusable UI kits with consistent typography and spacing systems."
+    ]
+  },
+  "risk_heatmap": [
+    {"category": "Automation", "score": 0.6, "description": "AI can instantly generate standard UI screens, requiring designers to move up the value chain to strategy and user research."},
+    {"category": "Skill Half-life", "score": 0.5, "description": "Design tools like Figma evolve, but core principles of human psychology and layout design remain stable."},
+    {"category": "Entry Competition", "score": 0.65, "description": "Very popular entry-level path; standout by showing technical prototyping skills and business alignment."},
+    {"category": "Trust Requirement", "score": 0.45, "description": "Ensuring accessible, ethical patterns that protect user attention and data choices."}
+  ]
+}

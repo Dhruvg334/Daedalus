@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Daedalus API"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
+    ENVIRONMENT: str = "development"
 
     # Use a default that is safe for local development.
     DATABASE_URL: str = "sqlite:///./daedalus.db"

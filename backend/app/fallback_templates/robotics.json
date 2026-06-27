@@ -1,0 +1,80 @@
+{
+  "learning_roadmap": [
+    {
+      "step": 1,
+      "title": "Hardware & Microcontroller Basics: {first_gap}",
+      "description": "Understand circuit fundamentals, sensors, and microcontrollers while coding basic controls for {first_gap}.",
+      "estimated_time": "5-7 hours"
+    },
+    {
+      "step": 2,
+      "title": "Embedded Code & Sensor Logic: {second_gap}",
+      "description": "Program real-time sensor loops and mechanical actuation using {second_gap}.",
+      "estimated_time": "7-9 hours"
+    },
+    {
+      "step": 3,
+      "title": "Physical Prototype Demo",
+      "description": "Assemble a working hardware demo or simulation model with schematics and video demonstration.",
+      "estimated_time": "3-4 hours"
+    }
+  ],
+  "ai_exposure_breakdown": [
+    {
+      "task": "Circuit design & schematic drafting",
+      "ai_role": "AI checks pin configurations, suggests resistor values, and drafts PCB layouts.",
+      "human_role": "Human verifies electrical safety, physical constraints, and component sourcing.",
+      "risk_level": "medium"
+    },
+    {
+      "task": "Embedded code writing",
+      "ai_role": "AI generates C++/Python driver boilerplate and sensor parsing logic.",
+      "human_role": "Human manages real-time hardware interrupts, timing precision, and physical debugging.",
+      "risk_level": "low"
+    },
+    {
+      "task": "Physical testing & assembly",
+      "ai_role": "AI analyzes sensor telemetry logs to detect mechanical friction or drift.",
+      "human_role": "Human performs hands-on soldering, assembly, mechanical alignment, and safety checks.",
+      "risk_level": "low"
+    }
+  ],
+  "evolution_timeline": [
+    {
+      "period": "0-3 months",
+      "title": "Robotics / Hardware Hobbyist",
+      "description": "Build basic sensor-driven prototypes with Arduino/Raspberry Pi and write fundamental control scripts.",
+      "unlocked_capabilities": ["Circuit schematics", "first physical prototype demo"],
+      "risk_factor": 0.1
+    },
+    {
+      "period": "6-12 months",
+      "title": "Embedded Systems Engineer",
+      "description": "Design custom PCBs, program real-time operating systems (RTOS), and integrate wireless IoT modules.",
+      "unlocked_capabilities": ["Custom PCB design", "RTOS embedded control"],
+      "risk_factor": 0.22
+    },
+    {
+      "period": "2-3 years",
+      "title": "Robotics Systems Architect",
+      "description": "Lead autonomous mechanical systems engineering, integrating computer vision, ROS, and physical hardware.",
+      "unlocked_capabilities": ["Autonomous system design", "ROS integration"],
+      "risk_factor": 0.35
+    }
+  ],
+  "future_self": {
+    "headline": "Future Robotics / Hardware Innovator",
+    "narrative": "{name} can bridge the digital and physical worlds by building smart physical devices. Hands-on hardware tinkering combined with modern AI algorithms will make your skills irreplaceable.",
+    "future_resume_highlights": [
+      "Built a sensor-controlled physical prototype related to {title}.",
+      "Designed circuit schematics and programmed real-time hardware feedback loops.",
+      "Published a complete technical documentation README with mechanical drawings."
+    ]
+  },
+  "risk_heatmap": [
+    {"category": "Automation", "score": 0.3, "description": "Physical assembly and real-world hardware integration are highly resistant to pure digital automation."},
+    {"category": "Skill Half-life", "score": 0.35, "description": "Physics and electronics laws do not change, though microcontroller platforms evolve over time."},
+    {"category": "Entry Competition", "score": 0.4, "description": "Requires hardware components and practical prototyping, naturally reducing entry-level crowd competition."},
+    {"category": "Trust Requirement", "score": 0.75, "description": "Physical systems operating near humans demand strict safety verification and physical reliability."}
+  ]
+}

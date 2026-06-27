@@ -1,0 +1,80 @@
+{
+  "learning_roadmap": [
+    {
+      "step": 1,
+      "title": "Build the Foundation: {first_gap}",
+      "description": "Learn the essentials of {first_gap} through a structured tutorial and practical exercises.",
+      "estimated_time": "4-6 hours"
+    },
+    {
+      "step": 2,
+      "title": "Apply in Context: {second_gap}",
+      "description": "Utilize {second_gap} to build a small feature or handle a real-world scenario.",
+      "estimated_time": "6-8 hours"
+    },
+    {
+      "step": 3,
+      "title": "Package and Present",
+      "description": "Create a showcase repository or report highlighting what you built and how AI tools assisted you.",
+      "estimated_time": "2-3 hours"
+    }
+  ],
+  "ai_exposure_breakdown": [
+    {
+      "task": "Routine research & drafting",
+      "ai_role": "AI draft generation, summaries, and formula generation.",
+      "human_role": "Human fact-checks, validates inputs, and ensures relevance.",
+      "risk_level": "medium"
+    },
+    {
+      "task": "Judgment & decision making",
+      "ai_role": "AI can summarize options and compare tradeoffs.",
+      "human_role": "Human owns the final decision, responsibility, and context alignment.",
+      "risk_level": "low"
+    },
+    {
+      "task": "Complex problem solving",
+      "ai_role": "AI assists in troubleshooting or code generation.",
+      "human_role": "Human guides the debugging, validates logic, and manages edge cases.",
+      "risk_level": "medium"
+    }
+  ],
+  "evolution_timeline": [
+    {
+      "period": "0-3 months",
+      "title": "Foundation Phase",
+      "description": "Gain core domain literacy and ship your first mini-project in this field.",
+      "unlocked_capabilities": ["Basic terminology", "first portfolio project"],
+      "risk_factor": 0.15
+    },
+    {
+      "period": "6-12 months",
+      "title": "Application Phase",
+      "description": "Gain hands-on experience through small freelance tasks, internships, or open-source projects.",
+      "unlocked_capabilities": ["execution experience", "feedback loop mastery"],
+      "risk_factor": 0.25
+    },
+    {
+      "period": "2-3 years",
+      "title": "Specialized Professional",
+      "description": "Integrate domain expertise with AI-augmented workflows to establish a unique niche.",
+      "unlocked_capabilities": ["niche expertise", "professional portfolio"],
+      "risk_factor": 0.35
+    }
+  ],
+  "future_self": {
+    "headline": "Emerging {title} Practitioner",
+    "narrative": "{name} can kickstart their journey in {cluster} by building projects that highlight core capabilities. Continuous learning and AI integration will pave the way.",
+    "future_resume_highlights": [
+      "Completed a hands-on starter project related to {title}.",
+      "Demonstrated responsible AI leverage while retaining human agency.",
+      "Documented learning iterations and technical deliverables."
+    ]
+  },
+  "risk_heatmap": [
+    {"category": "Automation", "score": 0.5, "description": "Routine tasks can be accelerated or fully completed with AI tools."},
+    {"category": "Skill Half-life", "score": 0.45, "description": "Rapid changes in tools require continuous learning and adaptability."},
+    {"category": "Entry Competition", "score": 0.4, "description": "Standard entry-level tasks have high competition; niche specialization is key."},
+    {"category": "Trust Requirement", "score": 0.35, "description": "Reputational credibility and domain intuition are critical human advantages."}
+  ]
+}

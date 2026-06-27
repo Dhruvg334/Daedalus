@@ -1,11 +1,23 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
+from typing import List, Any
 from ...core.database import get_db
 from ...services.simulation_service import SimulationService
 from ...schemas.simulation import SimulationResponse
 from ...repositories.simulation_repository import SimulationRepository
+from ..deps import get_current_user
 
 router = APIRouter()
+
+@router.get("", response_model=List[Any])
+@router.get("/", response_model=List[Any])
+async def list_simulations(
+    db: Session = Depends(get_db),
+    current_user: Any = Depends(get_current_user)
+):
+    repo = SimulationRepository(db)
+    db_sims = repo.get_multi_by_user(current_user.id)
+    return [sim.result_json for sim in db_sims if sim.result_json]
 
 @router.get("/{simulation_id}", response_model=SimulationResponse)
 async def get_simulation(simulation_id: str, db: Session = Depends(get_db)):

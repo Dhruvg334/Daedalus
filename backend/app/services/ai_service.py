@@ -347,3 +347,96 @@ Candidate careers:
             "human_advantage": top_path.get("human_advantage"),
             "sprint_title": context.get("action_sprint", {}).get("sprint_title"),
         }
+
+    async def enhance_career_paths(self, profile: Dict[str, Any], prebuilt_paths: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Ask Gemini to enhance phrasing of pre-selected career recommendations using prompt compression and caching."""
+        if not self.model:
+            logger.info("Gemini enhancement skipped: model not ready", extra={"reason": self.status_reason})
+            return prebuilt_paths
+
+        career_ids = [path["career_id"] for path in prebuilt_paths]
+        
+        # 1. Check Cache
+        from .response_cache import ResponseCache
+        cached = ResponseCache.get(profile, career_ids)
+        if cached:
+            logger.info("Gemini enhancement cache hit", extra={"career_ids": career_ids})
+            return self._apply_enhancements(prebuilt_paths, cached)
+
+        # 2. Build compressed prompt
+        from .prompt_builder import build_enhancement_prompt
+        prompt = build_enhancement_prompt(profile, prebuilt_paths)
+        
+        try:
+            logger.info("Gemini enhancement request started", extra={"career_ids": career_ids})
+            response = await asyncio.wait_for(self.model.generate_content_async(prompt), timeout=15)
+            text = response.text or ""
+            match = re.search(r"\{.*\}", text, re.S)
+            if not match:
+                logger.warning("Gemini enhancement returned non-JSON", extra={"text_preview": text[:200]})
+                return prebuilt_paths
+            
+            parsed = json.loads(match.group(0))
+            recommendations = parsed.get("recommendations", [])
+            if not isinstance(recommendations, list):
+                logger.warning("Gemini enhancement JSON format invalid: recommendations is not a list")
+                return prebuilt_paths
+            
+            # 3. Cache the response
+            ResponseCache.set(profile, career_ids, recommendations)
+            logger.info("Gemini enhancement request completed & cached")
+            
+            # 4. Apply enhancements
+            return self._apply_enhancements(prebuilt_paths, recommendations)
+        except Exception as exc:
+            logger.warning("Gemini enhancement failed; returning prebuilt paths", extra={"error": str(exc)[:250]})
+            return prebuilt_paths
+
+    def _apply_enhancements(self, prebuilt_paths: List[Dict[str, Any]], enhancements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Applies enhanced fields from Gemini to the prebuilt paths."""
+        enhanced_by_id = {item.get("career_id"): item for item in enhancements if isinstance(item, dict)}
+        
+        result = []
+        for path in prebuilt_paths:
+            path_copy = dict(path)
+            enhanced = enhanced_by_id.get(path["career_id"])
+            if enhanced:
+                # Enhance explanations
+                if isinstance(enhanced.get("why_it_fits"), list) and len(enhanced["why_it_fits"]) >= 3:
+                    path_copy["why_it_fits"] = [str(x) for x in enhanced["why_it_fits"][:3]]
+                
+                # Enhance starter project
+                proj = enhanced.get("starter_project")
+                if isinstance(proj, dict):
+                    orig_proj = path_copy.get("starter_project") or {}
+                    path_copy["starter_project"] = {
+                        "title": str(proj.get("title") or orig_proj.get("title") or ""),
+                        "description": str(proj.get("description") or orig_proj.get("description") or ""),
+                        "expected_output": str(proj.get("expected_output") or orig_proj.get("expected_output") or "")
+                    }
+                    
+                # Enhance learning roadmap
+                roadmap = enhanced.get("learning_roadmap")
+                if isinstance(roadmap, list):
+                    enhanced_steps = {step.get("step"): step for step in roadmap if isinstance(step, dict)}
+                    updated_roadmap = []
+                    for step in path_copy.get("learning_roadmap", []):
+                        step_copy = dict(step)
+                        est = enhanced_steps.get(step["step"])
+                        if est:
+                            step_copy["title"] = str(est.get("title") or step_copy["title"])
+                            step_copy["description"] = str(est.get("description") or step_copy["description"])
+                        updated_roadmap.append(step_copy)
+                    path_copy["learning_roadmap"] = updated_roadmap
+                    
+                # Enhance future self
+                fself = enhanced.get("future_self")
+                if isinstance(fself, dict) and path_copy.get("future_self"):
+                    fself_copy = dict(path_copy["future_self"])
+                    fself_copy["headline"] = str(fself.get("headline") or fself_copy["headline"])
+                    fself_copy["narrative"] = str(fself.get("narrative") or fself_copy["narrative"])
+                    path_copy["future_self"] = fself_copy
+                    
+            result.append(path_copy)
+        return result
+
