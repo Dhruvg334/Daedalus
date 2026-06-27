@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { ContinueDashboardButton } from "@/components/ContinueDashboardButton";
 
 export function FloatingNav() {
@@ -33,14 +33,9 @@ export function FloatingNav() {
               {label}
             </Link>
           ))}
-          <ContinueDashboardButton variant="nav" />
         </div>
 
-        <Link href="/onboarding">
-          <button className="flex items-center gap-1.5 bg-black text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-neutral-800 transition-colors shrink-0">
-            Get Started <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </Link>
+        <ContinueDashboardButton variant="navPrimary" />
       </div>
     </nav>
   );

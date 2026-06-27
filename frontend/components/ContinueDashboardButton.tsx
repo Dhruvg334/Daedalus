@@ -6,7 +6,7 @@ import { ArrowRight, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSimulation } from "@/lib/simulation-store";
 
-export function ContinueDashboardButton({ variant = "hero" }: { variant?: "hero" | "nav" }) {
+export function ContinueDashboardButton({ variant = "hero" }: { variant?: "hero" | "nav" | "navPrimary" }) {
   const [simulationId, setSimulationId] = useState<string | null>(null);
   const [name, setName] = useState<string>("");
 
@@ -18,7 +18,28 @@ export function ContinueDashboardButton({ variant = "hero" }: { variant?: "hero"
     }
   }, []);
 
+  if (!simulationId && variant === "navPrimary") {
+    return (
+      <Button className="flex items-center gap-1.5 bg-black text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-neutral-800 transition-colors shrink-0" asChild>
+        <Link href="/onboarding">
+          Get Started <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </Button>
+    );
+  }
+
   if (!simulationId) return null;
+
+  if (variant === "navPrimary") {
+    return (
+      <Button className="flex items-center gap-1.5 bg-black text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-neutral-800 transition-colors shrink-0" asChild>
+        <Link href={`/dashboard/${simulationId}`}>
+          <RotateCcw className="w-3.5 h-3.5" />
+          Continue
+        </Link>
+      </Button>
+    );
+  }
 
   if (variant === "nav") {
     return (

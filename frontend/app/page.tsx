@@ -23,9 +23,6 @@ export default function Home() {
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto px-6 pt-28 pb-20">
-          <div className="pb mb-8 mx-auto w-fit">
-          </div>
-
           <h3 className="text-5xl md:text-7xl font-black tracking-tight mb-6 leading-[1.06]">
           Stop guessing <br></br>your future.{" "} 
           </h3>
