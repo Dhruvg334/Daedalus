@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .api.v1 import assistant, auth, demo_personas, feedback, health, hubs, progress, simulate, simulations
+from .api.v1 import assistant, demo_personas, feedback, health, hubs, progress, simulate, simulations
 from .core.config import settings
 from .core.database import Base, engine
 
@@ -62,7 +62,6 @@ app.add_middleware(
 
 
 app.include_router(health.router, prefix=settings.API_V1_STR, tags=["health"])
-app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(demo_personas.router, prefix=f"{settings.API_V1_STR}/demo-personas", tags=["demo-personas"])
 app.include_router(simulate.router, prefix=f"{settings.API_V1_STR}/simulate", tags=["simulate"])
 app.include_router(simulations.router, prefix=f"{settings.API_V1_STR}/simulations", tags=["simulations"])

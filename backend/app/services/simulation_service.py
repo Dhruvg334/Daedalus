@@ -714,92 +714,48 @@ class SimulationService:
     async def run_simulation_async(self, payload: SimulationRequest) -> Dict[str, Any]:
         start_time = time.time()
         profile = payload.student_profile.model_dump()
-        top_n = 3
+        top_n = max(1, min(payload.options.preferred_number_of_paths, 5))
 
-        # Imports of our new services
-        from .semantic_classifier import classify_profile
-        from .candidate_selector import select_candidates
-        from .fallback_builder import build_career_path, build_action_sprint
-        from .ai_service import AIService
-
-        # 1. Semantic Classification Layer
-        classification = classify_profile(profile, CAREER_LIBRARY)
-        primary_cluster = classification["primary_cluster"]
-        secondary_clusters = classification["secondary_clusters"]
-
-        # 2. Candidate Career Filtering
-        filtered_candidates = select_candidates(CAREER_LIBRARY, classification)
-
-        # 3. Deterministic Ranking
         rank_start = time.time()
-        ranked_results = self._rank_careers_with_logic(profile, career_library=filtered_candidates)
+        ranked_results = self._rank_careers_with_logic(profile)
         deterministic_top = [r["career"]["career_id"] for r in ranked_results[:top_n]]
-        rank_end = time.time()
-
-        # 4. Multi-Recommendation Engine Selection (exactly 3 unique paths)
-        # Recommendation 1: Highest fit score
-        rec1 = ranked_results[0]
-
-        # Recommendation 2: Closely related alternative (same cluster if possible)
-        rec2 = None
-        for r in ranked_results[1:]:
-            if r["career"]["cluster"] == rec1["career"]["cluster"]:
-                rec2 = r
-                break
-        if not rec2:
-            rec2 = ranked_results[1]
-
-        # Recommendation 3: Exploratory alternative (different cluster)
-        rec3 = None
-        used_clusters = {rec1["career"]["cluster"], rec2["career"]["cluster"]}
-        for r in ranked_results[1:]:
-            if r["career"]["career_id"] in (rec1["career"]["career_id"], rec2["career"]["career_id"]):
-                continue
-            if r["career"]["cluster"] not in used_clusters:
-                rec3 = r
-                break
-        if not rec3:
-            for r in ranked_results[1:]:
-                if r["career"]["career_id"] not in (rec1["career"]["career_id"], rec2["career"]["career_id"]):
-                    rec3 = r
-                    break
-
-        selected_recs = [rec1, rec2, rec3]
-
-        # 5. Fallback/Template Generation
-        career_paths = [
-            build_career_path(profile, rec["career"], index, rec["fit_score"], rec["logic"]["matched_signals"])
-            for index, rec in enumerate(selected_recs)
-        ]
-
-        # 6. Optional Gemini Enhancement
         ai_status = {"used": False, "reason": "not_configured_or_unavailable", "selected_ids": [], "generated_titles": []}
         try:
+            from .ai_service import AIService
+
             ai_service = AIService()
-            enhanced_paths = await ai_service.enhance_career_paths(profile, career_paths)
-            if enhanced_paths:
-                career_paths = enhanced_paths
+            candidate_pool = [r["career"] for r in ranked_results[:60]]
+            ai_careers = await ai_service.generate_career_paths(profile, candidate_pool, top_n=top_n)
+            if ai_careers:
+                ai_ranked = self._rank_careers_with_logic(profile, career_library=ai_careers)
+                ai_ids = [item["career"]["career_id"] for item in ai_ranked]
+                used_ids = set(ai_ids)
+                remainder = [item for item in ranked_results if item["career"]["career_id"] not in used_ids]
+                ranked_results = ai_ranked + remainder
                 ai_status = {
                     "used": True,
-                    "reason": "gemini_enhanced_wording",
-                    "selected_ids": [c["career_id"] for c in career_paths],
-                    "generated_titles": [c["title"] for c in career_paths],
+                    "reason": "gemini_generated_or_selected_paths",
+                    "selected_ids": ai_ids[:top_n],
+                    "generated_titles": [item["career"].get("title") for item in ai_ranked[:top_n]],
                 }
         except Exception as exc:
-            logger.warning("Gemini simulation enhancement unavailable; fallback templates used", extra={"error": str(exc)})
+            logger.warning("Gemini simulation generation unavailable; deterministic ranking used", extra={"error": str(exc)})
             ai_status = {"used": False, "reason": str(exc)[:160], "selected_ids": [], "generated_titles": []}
 
+        qualified_results = [item for item in ranked_results if int(item["fit_score"]) >= 50]
+        if not qualified_results:
+            logger.info("No career paths crossed display threshold; showing best available path at the minimum display threshold", extra={"top_score": ranked_results[0]["fit_score"] if ranked_results else None})
+            qualified_results = ranked_results[:1]
+            if qualified_results:
+                qualified_results[0] = dict(qualified_results[0])
+                qualified_results[0]["fit_score"] = 50
+        rank_end = time.time()
+
+        career_paths = [self._build_career_path(profile, item["career"], index, item) for index, item in enumerate(qualified_results[:top_n])]
+        if not career_paths:
+            raise RuntimeError("No career paths could be generated from the current profile.")
         recommended = career_paths[0]
         simulation_id = f"sim_{uuid.uuid4().hex[:12]}"
-
-        # Compose action sprint
-        action_sprint = build_action_sprint(selected_recs[0]["career"], profile)
-        action_sprint["expected_final_output"] = recommended["starter_project"]["expected_output"]
-        for day in action_sprint["days"]:
-            if day["day"] == 4:
-                day["task"] = recommended["starter_project"]["description"]
-            if day["day"] == 7:
-                day["deliverable"] = recommended["starter_project"]["expected_output"]
 
         simulation = {
             "simulation_id": simulation_id,
@@ -830,9 +786,9 @@ class SimulationService:
                 ],
             },
             "skill_gap_analysis": self._skill_gap_analysis(profile, career_paths),
-            "action_sprint": action_sprint,
+            "action_sprint": self._action_sprint(recommended, profile),
             "trace": {
-                "pipeline_version": "v3.0-semantic-multi-path",
+                "pipeline_version": "v2.0-profile-sensitive",
                 "steps": [
                     {
                         "step_id": "profile_normalization",
@@ -841,49 +797,33 @@ class SimulationService:
                         "detail": {"input_signals": len(self._profile_tokens(profile)), "career_library_size": len(CAREER_LIBRARY), "display_threshold": 50},
                     },
                     {
-                        "step_id": "semantic_classification",
-                        "status": "completed",
-                        "summary": f"Classified user profile into primary cluster '{primary_cluster}' and secondary clusters.",
-                        "detail": {
-                            "primary_cluster": primary_cluster,
-                            "secondary_clusters": secondary_clusters,
-                            "weights": classification["weights"]
-                        }
-                    },
-                    {
-                        "step_id": "candidate_filtering",
-                        "status": "completed",
-                        "summary": f"Filtered candidate careers down to {len(filtered_candidates)} relevant cluster careers.",
-                        "detail": {"filtered_size": len(filtered_candidates)}
-                    },
-                    {
                         "step_id": "career_ranking",
                         "status": "completed",
-                        "summary": "Ranked filtered careers using weighted overlap and chose 3 unique paths.",
+                        "summary": "Ranked the expanded career library using weighted overlap and semantic aliases.",
                         "detail": {
                             "latency_ms": round((rank_end - rank_start) * 1000, 2),
                             "deterministic_top": deterministic_top,
-                            "ai_status": ai_status,
+                            "ai_rerank": ai_status,
                             "top_matches": [
                                 {
                                     "career_id": r["career"]["career_id"],
                                     "fit_score": r["fit_score"],
                                     "signals": r["logic"]["matched_signals"][:8],
                                 }
-                                for r in selected_recs
+                                for r in ranked_results[:top_n]
                             ],
                         },
                     },
                     {
                         "step_id": "roadmap_generation",
                         "status": "completed",
-                        "summary": "Generated career-specific projects, skill gaps, AI exposure notes, and sprint actions using fallback templates.",
+                        "summary": "Generated career-specific projects, skill gaps, AI exposure notes, and sprint actions.",
                         "detail": {"paths_returned": len(career_paths)},
                     },
                 ],
                 "warnings": [
                     "Career recommendations are directional and meant for exploration, not final life decisions.",
-                    "Gemini is used for phrasing refinement; deterministic templates remain the fallback for reliability.",
+                    "Gemini is used for career-path generation when configured; deterministic ranking remains the fallback for reliability.",
                 ],
             },
         }
@@ -897,7 +837,6 @@ class SimulationService:
             }
         )
         return {"success": True, "simulation": simulation}
-
 
     def _build_career_path(self, profile: Dict[str, Any], career: Dict[str, Any], index: int, ranked_item: Dict[str, Any]) -> Dict[str, Any]:
         fit_score = int(ranked_item["fit_score"])

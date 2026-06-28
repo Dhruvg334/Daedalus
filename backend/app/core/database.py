@@ -11,8 +11,7 @@ if os.getenv("VERCEL") or os.getenv("ENVIRONMENT") == "production":
 else:
     DB_PATH = os.path.join(BASE_DIR, "daedalus.db")
 
-db_path_clean = DB_PATH.replace('\\\\', '/').replace('\\', '/')
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{db_path_clean}"
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH.replace('\\\\', '/')}"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
